@@ -99,7 +99,7 @@ button:hover {
 }
 
 button.active {
-  background: #eff6ff;
+  background: var(--wf-interactive);
   border-color: var(--wf-accent);
   color: var(--wf-accent);
   font-weight: 600;
@@ -107,23 +107,23 @@ button.active {
 
 button.primary {
   background: var(--wf-accent);
-  color: white;
+  color: var(--wf-accent-text);
   border-color: var(--wf-accent);
   font-weight: 600;
   box-shadow: var(--shadow-sm);
 }
 
 button.primary:hover {
-  background: #2563eb;
+  background: #c2c2c2;
 }
 
 button.danger {
-  border-color: #fca5a5;
+  border-color: #ef4444;
   color: #ef4444;
 }
 
 button.danger:hover {
-  background: #fee2e2;
+  background: rgba(239, 68, 68, 0.15);
 }
 
 .icon-btn {
@@ -347,7 +347,7 @@ input[type="number"] {
 }
 
 .tool-btn.active {
-  background: #eff6ff;
+  background: var(--wf-interactive);
   color: var(--wf-accent);
 }
 
