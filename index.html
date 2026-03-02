@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shape Studio - Wireframe</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Top App Bar -->
+    <header class="app-bar">
+        <div class="app-bar-left">
+            <span class="icon hamburger">≡</span>
+            <span class="app-name">Shape Studio</span>
+            <span class="file-name">Untitled File &#9662;</span>
+            <span class="icon cloud">☁️</span>
+        </div>
+        <div class="app-bar-center">
+            <button class="btn icon-btn" title="Undo (Cmd+Z)" id="undo-btn">⟲</button>
+            <button class="btn icon-btn" title="Redo (Cmd+Y)" id="redo-btn">⟳</button>
+            <div class="divider"></div>
+            <button class="btn icon-btn" title="Save" id="save-btn">💾</button>
+            <button class="btn icon-btn" title="Export">📤</button>
+        </div>
+        <div class="app-bar-right">
+            <div class="search-box">
+                <span class="icon">🔍</span>
+                <input type="text" placeholder="Search shapes & commands...">
+            </div>
+            <button class="btn icon-btn">❓</button>
+            <div class="mode-toggle">
+                <button class="btn active" id="mode-beginner">Beginner</button>
+                <div class="divider-v"></div>
+                <button class="btn" id="mode-advanced">Advanced</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- App Body -->
+    <div class="app-body">
+
+        <!-- Tabbed Ribbon -->
+        <nav class="ribbon">
+            <div class="tabs">
+                <button class="tab active">Shapes</button>
+                <button class="tab">Transform</button>
+                <button class="tab">Arrange</button>
+                <button class="tab">Style</button>
+                <button class="tab">Templates</button>
+            </div>
+            <div class="ribbon-content">
+                <div class="ribbon-group">
+                    <button class="btn icon-text-btn"><span class="icon">📚</span> Shape Library</button>
+                </div>
+                <!-- Other compact controls for active tab would go here -->
+                <div class="ribbon-group">
+                    <span class="label">Quick Actions:</span>
+                    <button class="btn icon-btn">🔳</button>
+                    <button class="btn icon-btn">⬡</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="main-workspace">
+
+            <!-- Left Tool Palette -->
+            <aside class="tool-palette">
+                <!-- Mini strip -->
+                <div class="recent-tools">
+                    <button class="btn tool-btn small-tool" title="Recently used">⬟</button>
+                    <button class="btn tool-btn small-tool" title="Recently used">🔤</button>
+                    <div class="divider-h"></div>
+                </div>
+
+                <div class="tool-group">
+                    <div class="tool-btn-container">
+                        <button class="btn tool-btn active" id="tool-select" data-tool="select">
+                            <span class="icon">↗</span>
+                            <span class="tool-label">Select</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tool-group">
+                    <button class="btn tool-btn" id="tool-shape" data-tool="shape"><span class="icon">⬜</span><span
+                            class="tool-label">Shape</span></button>
+                    <button class="btn tool-btn" id="tool-pen" data-tool="pen"><span class="icon">✒️</span><span
+                            class="tool-label">Pen</span></button>
+                    <button class="btn tool-btn" id="tool-text" data-tool="text"><span class="icon">T</span><span
+                            class="tool-label">Text</span></button>
+                    <button class="btn tool-btn" id="tool-eraser" data-tool="eraser"><span class="icon">🧹</span><span
+                            class="tool-label">Eraser</span></button>
+                    <button class="btn tool-btn" id="tool-measure" data-tool="measure"><span class="icon">📏</span><span
+                            class="tool-label">Measure</span></button>
+                    <button class="btn tool-btn" id="tool-pan" data-tool="pan"><span class="icon">🤚</span><span
+                            class="tool-label">Pan</span></button>
+                </div>
+            </aside>
+
+            <!-- Center Canvas -->
+            <main class="canvas-area">
+                <div class="ruler top-ruler">...</div>
+                <div class="ruler left-ruler">...</div>
+
+                <div class="canvas-controls">
+                    <button class="btn icon-btn">🔍-</button>
+                    <span class="zoom-level">100%</span>
+                    <button class="btn icon-btn">🔍+</button>
+                    <button class="btn icon-btn" title="Fit to Screen">⛶</button>
+                </div>
+
+                <div class="canvas" id="canvas-container">
+                    <!-- Dynamic shapes will be added here -->
+
+                    <!-- Ghost Preview (moved dynamically by JS) -->
+                    <div class="shape-ghost hidden" id="drag-ghost">
+                    </div>
+
+                    <!-- Contextual Mini-Toolbar (hidden by default) -->
+                    <div class="mini-toolbar hidden" id="context-toolbar">
+                        <button class="btn icon-btn" title="Fill" id="mini-fill-btn">🪣</button>
+                        <button class="btn icon-btn" title="Stroke" id="mini-stroke-btn">🖊️</button>
+                        <div class="divider"></div>
+                        <button class="btn icon-btn" title="Duplicate" id="duplicate-btn">⧉</button>
+                        <button class="btn icon-btn" title="Align" id="align-btn">⫚</button>
+                        <button class="btn icon-btn danger" title="Delete" id="delete-btn">🗑️</button>
+                    </div>
+
+                    <!-- Command Palette Overlay Context -->
+                    <div class="overlay-inset command-palette-inset hidden" id="command-palette">
+                        <div class="command-palette">
+                            <input type="text" placeholder="Type a command...">
+                            <ul class="cmd-list">
+                                <li>Group <span>Ctrl+G</span></li>
+                                <li>Bring to Front <span>Ctrl+]</span></li>
+                                <li class="selected">Export as PNG <span>Cmd+E</span></li>
+                            </ul>
+                        </div>
+                        <div class="inset-label">Command Palette (Ctrl+K)</div>
+                    </div>
+
+                    <!-- Confirmation Dialog Overlay Context -->
+                    <div class="overlay-inset confirm-dialog-inset hidden" id="confirm-dialog">
+                        <div class="dialog">
+                            <h3>Clear Canvas?</h3>
+                            <p>This will permanently remove all shapes. You can Undo (Cmd+Z) if needed.</p>
+                            <div class="dialog-actions">
+                                <button class="btn" id="cancel-clear">Cancel</button>
+                                <button class="btn primary danger" id="confirm-clear">Clear Workspace</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Beginner/Advanced Mini Panel Inset -->
+                    <div class="overlay-inset advanced-panel-inset hidden" id="advanced-preview-panel">
+                        <div class="side-by-side-panels">
+                            <div class="mini-panel">
+                                <div class="panel-header">Beginner Style</div>
+                                <div class="panel-body">
+                                    <div class="prop-row"><label>Color</label>
+                                        <div class="color-box"></div>
+                                    </div>
+                                    <div class="prop-row"><label>Border</label>
+                                        <div class="color-box"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mini-panel">
+                                <div class="panel-header">Advanced Style</div>
+                                <div class="panel-body">
+                                    <div class="prop-row"><label>Fill</label>
+                                        <div class="color-box"></div> <span>100%</span>
+                                    </div>
+                                    <div class="prop-row"><label>Stroke</label>
+                                        <div class="color-box"></div> <span>2px</span>
+                                    </div>
+                                    <div class="prop-row"><label>Effects</label> <button class="btn small">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Right Docked Panel / Inspector -->
+            <aside class="right-sidebar">
+                <!-- Shape Library (Docked mode) -->
+                <div class="panel library-panel">
+                    <div class="panel-header">
+                        <h2>Shape Library</h2>
+                        <button class="btn icon-btn">✕</button>
+                    </div>
+                    <div class="panel-body">
+                        <input type="text" class="full-width-search" placeholder="Search library...">
+                        <div class="chips">
+                            <span class="chip active">Basic</span>
+                            <span class="chip">Polygons</span>
+                            <span class="chip">Arrows</span>
+                        </div>
+                        <div class="shape-grid" id="library-grid">
+                            <div class="shape-item" draggable="true" data-type="square">⃞ <span>Square</span></div>
+                            <div class="shape-item" draggable="true" data-type="circle">◯ <span>Circle</span></div>
+                            <div class="shape-item" draggable="true" data-type="triangle">△ <span>Triangle</span></div>
+                            <div class="shape-item" draggable="true" data-type="star">⭐ <span>Star</span></div>
+                        </div>
+                        <button class="btn full-width text-link">More Categories...</button>
+                    </div>
+                </div>
+
+                <!-- Inspector Panel -->
+                <div class="panel inspector-panel">
+                    <div class="panel-header">
+                        <h2>Properties</h2>
+                    </div>
+                    <div class="panel-body accordion-group">
+                        <div class="accordion expanded">
+                            <div class="acc-header">▶ Geometry</div>
+                            <div class="acc-body">
+                                <div class="input-group-row">
+                                    <label>W</label><input type="number" id="insp-w" value="120">
+                                    <label>H</label><input type="number" id="insp-h" value="80">
+                                </div>
+                                <div class="input-group-row">
+                                    <label>⟳</label><input type="number" id="insp-rot" value="0">
+                                    <label>◰</label><input type="number" id="insp-rad" value="4">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion expanded" id="inspector-style">
+                            <div class="acc-header">▶ Style</div>
+                            <div class="acc-body">
+                                <div class="prop-row"><label>Fill</label>
+                                    <input type="color" class="color-box" id="insp-fill" value="#eaeaea">
+                                </div>
+                                <div class="prop-row"><label>Stroke</label>
+                                    <input type="color" class="color-box" id="insp-stroke" value="#444444">
+                                </div>
+                                <div class="prop-row slider-row">
+                                    <label>Opacity</label>
+                                    <input type="range" min="0" max="100" value="100" id="insp-opacity">
+                                    <span id="insp-opacity-val">100%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion">
+                            <div class="acc-header">▼ Constraints</div>
+                            <!-- Collapsed content -->
+                            <div class="acc-body" style="display:none;"></div>
+                        </div>
+
+                        <div class="accordion">
+                            <div class="acc-header">▼ Accessibility/Metadata</div>
+                            <!-- Collapsed content -->
+                            <div class="acc-body" style="display:none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Bottom Status Bar -->
+        <footer class="status-bar">
+            <div class="status-left">
+                <span class="tip">Tip: Drag shapes from the library onto the canvas.</span>
+            </div>
+            <div class="status-center">
+                <span>X: 450, Y: 320</span>
+                <span class="divider"></span>
+                <span>Snap: <span class="badge">Grid</span></span>
+                <span class="divider"></span>
+                <span>1 Selected</span>
+            </div>
+            <div class="status-right">
+                <div class="toast">
+                    Deleted shape <a href="#">Undo</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Application Script -->
+    <script src="script.js"></script>
+</body>
+
+</html>
