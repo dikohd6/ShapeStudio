@@ -13,24 +13,24 @@
     <!-- Top App Bar -->
     <header class="app-bar">
         <div class="app-bar-left">
-            <span class="icon hamburger">≡</span>
             <span class="app-name">Shape Studio</span>
-            <span class="file-name">Untitled File &#9662;</span>
-            <span class="icon cloud">☁️</span>
+            <input class="file-name" id="file-name" title="Rename file" value="Untitled File" />
         </div>
         <div class="app-bar-center">
             <button class="btn icon-btn" title="Undo (Cmd+Z)" id="undo-btn">⟲</button>
             <button class="btn icon-btn" title="Redo (Cmd+Y)" id="redo-btn">⟳</button>
             <div class="divider"></div>
-            <button class="btn icon-btn" title="Save" id="save-btn">💾</button>
-            <button class="btn icon-btn" title="Export">📤</button>
+            <button class="btn icon-btn" title="Save JSON (downloads drawing file)" id="save-btn">💾</button>
+            <button class="btn icon-btn" title="Import" id="import-btn">⤓</button>
+            <input type="file" id="import-input" accept="application/json" style="display:none;">
         </div>
         <div class="app-bar-right">
             <div class="search-box">
                 <span class="icon">🔍</span>
-                <input type="text" placeholder="Search shapes & commands...">
+                <input type="text" id="global-search" placeholder="Search commands...">
+                <div class="command-suggestions hidden" id="command-suggestions"></div>
             </div>
-            <button class="btn icon-btn">❓</button>
+            <button class="btn icon-btn" id="clear-canvas-btn" title="Clear canvas">🗑️</button>
             <div class="mode-toggle">
                 <button class="btn active" id="mode-beginner">Beginner</button>
                 <div class="divider-v"></div>
@@ -45,21 +45,81 @@
         <!-- Tabbed Ribbon -->
         <nav class="ribbon">
             <div class="tabs">
-                <button class="tab active">Shapes</button>
-                <button class="tab">Transform</button>
-                <button class="tab">Arrange</button>
-                <button class="tab">Style</button>
-                <button class="tab">Templates</button>
+                <button class="tab active" data-target="tab-shapes">Shapes</button>
+                <button class="tab" data-target="tab-transform">Transform</button>
+                <button class="tab" data-target="tab-arrange">Arrange</button>
+                <button class="tab" data-target="tab-style">Style</button>
+                <button class="tab" data-target="tab-templates">Templates</button>
             </div>
-            <div class="ribbon-content">
+            
+            <!-- Shapes Content -->
+            <div class="ribbon-content active" id="tab-shapes">
                 <div class="ribbon-group">
-                    <button class="btn icon-text-btn"><span class="icon">📚</span> Shape Library</button>
+                      <button class="btn icon-text-btn" id="toggle-library-btn"><span class="icon">📚</span> Shape Library</button>
                 </div>
-                <!-- Other compact controls for active tab would go here -->
                 <div class="ribbon-group">
                     <span class="label">Quick Actions:</span>
                     <button class="btn icon-btn">🔳</button>
                     <button class="btn icon-btn">⬡</button>
+                </div>
+            </div>
+
+            <!-- Transform Content -->
+            <div class="ribbon-content hidden" id="tab-transform">
+                <div class="ribbon-group">
+                    <span class="label">Position:</span>
+                    <label>X: <input type="number" id="ribbon-x" class="input-mini"></label>
+                    <label>Y: <input type="number" id="ribbon-y" class="input-mini"></label>
+                </div>
+                <div class="ribbon-group">
+                    <span class="label">Size:</span>
+                    <label>W: <input type="number" id="ribbon-w" class="input-mini"></label>
+                    <label>H: <input type="number" id="ribbon-h" class="input-mini"></label>
+                </div>
+                <div class="ribbon-group">
+                    <span class="label">Rotate:</span>
+                    <label>Deg: <input type="number" id="ribbon-rot" class="input-mini"></label>
+                </div>
+            </div>
+
+            <!-- Arrange Content -->
+            <div class="ribbon-content hidden" id="tab-arrange">
+                <div class="ribbon-group">
+                    <span class="label">Alignment:</span>
+                    <button class="btn icon-btn" id="align-left" title="Align Left">⇤</button>
+                    <button class="btn icon-btn" id="align-center" title="Align Center">⇹</button>
+                    <button class="btn icon-btn" id="align-right" title="Align Right">⇥</button>
+                    <button class="btn icon-btn" id="align-top" title="Align Top">⇈</button>
+                    <button class="btn icon-btn" id="align-middle" title="Align Middle">⇕</button>
+                    <button class="btn icon-btn" id="align-bottom" title="Align Bottom">⇊</button>
+                </div>
+                <div class="ribbon-group">
+                    <span class="label">Order:</span>
+                    <button class="btn icon-text-btn" id="bring-front">Bring to Front</button>
+                    <button class="btn icon-text-btn" id="send-back">Send to Back</button>
+                </div>
+            </div>
+
+            <!-- Style Content -->
+            <div class="ribbon-content hidden" id="tab-style">
+                <div class="ribbon-group">
+                    <span class="label">Colors:</span>
+                    <label>Fill: <input type="color" id="ribbon-fill" value="#eaeaea"></label>
+                    <label>Stroke: <input type="color" id="ribbon-stroke" value="#444444"></label>
+                </div>
+                <div class="ribbon-group">
+                    <span class="label">Appearance:</span>
+                    <label>Opacity: <input type="range" id="ribbon-opacity" min="0" max="100" value="100"></label>
+                </div>
+            </div>
+
+            <!-- Templates Content -->
+            <div class="ribbon-content hidden" id="tab-templates">
+                <div class="ribbon-group">
+                    <span class="label">Quick Drops:</span>
+                    <button class="btn icon-text-btn" id="tmpl-button">Button UI</button>
+                    <button class="btn icon-text-btn" id="tmpl-card">Card UI</button>
+                    <button class="btn icon-text-btn" id="tmpl-modal">Modal UI</button>
                 </div>
             </div>
         </nav>
@@ -69,12 +129,6 @@
             <!-- Left Tool Palette -->
             <aside class="tool-palette">
                 <!-- Mini strip -->
-                <div class="recent-tools">
-                    <button class="btn tool-btn small-tool" title="Recently used">⬟</button>
-                    <button class="btn tool-btn small-tool" title="Recently used">🔤</button>
-                    <div class="divider-h"></div>
-                </div>
-
                 <div class="tool-group">
                     <div class="tool-btn-container">
                         <button class="btn tool-btn active" id="tool-select" data-tool="select">
@@ -106,10 +160,10 @@
                 <div class="ruler left-ruler">...</div>
 
                 <div class="canvas-controls">
-                    <button class="btn icon-btn">🔍-</button>
-                    <span class="zoom-level">100%</span>
-                    <button class="btn icon-btn">🔍+</button>
-                    <button class="btn icon-btn" title="Fit to Screen">⛶</button>
+                    <button class="btn icon-btn" id="zoom-out-btn"><span>🔍</span> <span style="font-weight:bold; font-size:16px;">-</span></button>
+                    <span class="zoom-level" id="zoom-level-label">100%</span>
+                    <button class="btn icon-btn" id="zoom-in-btn"><span>🔍</span> <span style="font-weight:bold; font-size:16px;">+</span></button>
+                    <button class="btn icon-btn" id="zoom-reset-btn" title="Fit to Screen">⛶</button>
                 </div>
 
                 <div class="canvas" id="canvas-container">
@@ -124,6 +178,7 @@
                         <button class="btn icon-btn" title="Fill" id="mini-fill-btn">🪣</button>
                         <button class="btn icon-btn" title="Stroke" id="mini-stroke-btn">🖊️</button>
                         <div class="divider"></div>
+                        <button class="btn icon-btn" title="Rotate +15°" id="rotate-btn">⤾</button>
                         <button class="btn icon-btn" title="Duplicate" id="duplicate-btn">⧉</button>
                         <button class="btn icon-btn" title="Align" id="align-btn">⫚</button>
                         <button class="btn icon-btn danger" title="Delete" id="delete-btn">🗑️</button>
@@ -192,14 +247,16 @@
                 <div class="panel library-panel">
                     <div class="panel-header">
                         <h2>Shape Library</h2>
-                        <button class="btn icon-btn">✕</button>
+                        <button class="btn icon-btn" id="close-library-btn">✕</button>
                     </div>
                     <div class="panel-body">
-                        <input type="text" class="full-width-search" placeholder="Search library...">
+                        <input type="text" class="full-width-search" id="library-search" placeholder="Search library...">
                         <div class="chips">
                             <span class="chip active">Basic</span>
                             <span class="chip">Polygons</span>
                             <span class="chip">Arrows</span>
+                            <span class="chip">UI</span>
+                            <span class="chip">Misc</span>
                         </div>
                         <div class="shape-grid" id="library-grid">
                             <div class="shape-item" draggable="true" data-type="square">⃞ <span>Square</span></div>
@@ -207,7 +264,6 @@
                             <div class="shape-item" draggable="true" data-type="triangle">△ <span>Triangle</span></div>
                             <div class="shape-item" draggable="true" data-type="star">⭐ <span>Star</span></div>
                         </div>
-                        <button class="btn full-width text-link">More Categories...</button>
                     </div>
                 </div>
 
@@ -217,23 +273,23 @@
                         <h2>Properties</h2>
                     </div>
                     <div class="panel-body accordion-group">
-                        <div class="accordion expanded">
+                        <div class="accordion">
                             <div class="acc-header">▶ Geometry</div>
-                            <div class="acc-body">
+                            <div class="acc-body" style="display:none;">
                                 <div class="input-group-row">
-                                    <label>W</label><input type="number" id="insp-w" value="120">
-                                    <label>H</label><input type="number" id="insp-h" value="80">
+                                    <label title="Width">W</label><input type="number" id="insp-w" value="120">
+                                    <label title="Height">H</label><input type="number" id="insp-h" value="80">
                                 </div>
                                 <div class="input-group-row">
-                                    <label>⟳</label><input type="number" id="insp-rot" value="0">
-                                    <label>◰</label><input type="number" id="insp-rad" value="4">
+                                    <label title="Rotation">⟳</label><input type="number" id="insp-rot" value="0">
+                                    <label title="Corner radius">◠</label><input type="number" id="insp-rad" value="8">
                                 </div>
                             </div>
                         </div>
 
-                        <div class="accordion expanded" id="inspector-style">
+                        <div class="accordion" id="inspector-style">
                             <div class="acc-header">▶ Style</div>
-                            <div class="acc-body">
+                            <div class="acc-body" style="display:none;">
                                 <div class="prop-row"><label>Fill</label>
                                     <input type="color" class="color-box" id="insp-fill" value="#eaeaea">
                                 </div>
@@ -249,15 +305,31 @@
                         </div>
 
                         <div class="accordion">
-                            <div class="acc-header">▼ Constraints</div>
-                            <!-- Collapsed content -->
-                            <div class="acc-body" style="display:none;"></div>
+                            <div class="acc-header">▶ Constraints</div>
+                            <div class="acc-body" style="display:none;">
+                                <div class="prop-row">
+                                    <label>Lock aspect</label>
+                                    <input type="checkbox" id="insp-lock-aspect">
+                                </div>
+                                <div class="prop-row">
+                                    <label>Lock position</label>
+                                    <input type="checkbox" id="insp-lock-position">
+                                </div>
+                            </div>
                         </div>
 
                         <div class="accordion">
-                            <div class="acc-header">▼ Accessibility/Metadata</div>
-                            <!-- Collapsed content -->
-                            <div class="acc-body" style="display:none;"></div>
+                            <div class="acc-header">▶ Accessibility/Metadata</div>
+                            <div class="acc-body" style="display:none;">
+                                <div class="prop-row">
+                                    <label>Label</label>
+                                    <input type="text" id="insp-label" placeholder="Accessible label">
+                                </div>
+                                <div class="prop-row">
+                                    <label>Description</label>
+                                    <input type="text" id="insp-desc" placeholder="Notes / metadata">
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -270,15 +342,18 @@
                 <span class="tip">Tip: Drag shapes from the library onto the canvas.</span>
             </div>
             <div class="status-center">
-                <span>X: 450, Y: 320</span>
+                <span>W: <input type="number" id="canvas-w" class="status-input" value="900" title="Canvas Width"></span>
                 <span class="divider"></span>
-                <span>Snap: <span class="badge">Grid</span></span>
+                <span>H: <input type="number" id="canvas-h" class="status-input" value="600" title="Canvas Height"></span>
                 <span class="divider"></span>
-                <span>1 Selected</span>
+                <span>Snap (px): <input type="number" id="snap-grid" class="status-input" value="20" title="Grid Snap Size"></span>
+                <span class="divider"></span>
+                <span>X: <span id="mouse-x">0</span>, Y: <span id="mouse-y">0</span></span>
+                <span class="divider"></span>
+                <span id="selection-counter">0 Selected</span>
             </div>
             <div class="status-right">
-                <div class="toast">
-                    Deleted shape <a href="#">Undo</a>
+                <div class="toast hidden">
                 </div>
             </div>
         </footer>

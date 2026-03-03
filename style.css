@@ -11,8 +11,8 @@ body {
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
     sans-serif;
-  color: #333;
-  background-color: #f5f5f5;
+  color: var(--wf-text);
+  background-color: var(--wf-bg-darker);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -71,8 +71,8 @@ body {
 }
 
 .badge {
-  background: var(--wf-accent);
-  color: white;
+  background: var(--wf-bg-gray);
+  color: var(--wf-text);
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 11px;
@@ -172,14 +172,33 @@ input[type="number"] {
 }
 
 .file-name {
-  color: var(--wf-text-muted);
-  cursor: pointer;
+  color: var(--wf-text);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  width: 160px;
+  transition: all 0.2s;
+  cursor: text;
+}
+
+.file-name:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--wf-accent);
+}
+
+.file-name:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--wf-accent);
+  outline: none;
 }
 
 /* Search Box */
 .search-box {
   display: flex;
   align-items: center;
+  gap: 6px;
   border: var(--wf-border);
   border-radius: var(--radius-md);
   padding: 4px 10px;
@@ -200,6 +219,54 @@ input[type="number"] {
   background: transparent;
   width: 180px;
   padding: 0;
+}
+
+.command-suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 240px;
+  background: var(--wf-bg);
+  border: var(--wf-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  z-index: 20;
+}
+
+.command-suggestions.hidden {
+  display: none;
+}
+
+.command-suggestions .item {
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--wf-text);
+  background: var(--wf-bg);
+  transition: background 0.15s ease;
+}
+
+.command-suggestions .item:hover {
+  background: var(--wf-bg-gray);
+}
+
+.command-suggestions .label {
+  font-weight: 600;
+}
+
+.command-suggestions .hint {
+  color: var(--wf-text-muted);
+  font-size: 12px;
+}
+
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
 }
 
 /* Mode Toggle */
@@ -461,12 +528,21 @@ input[type="number"] {
   left: 32px;
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: white;
+  gap: 8px;
+  background: var(--wf-bg);
   padding: 4px;
   border: var(--wf-border-light);
   border-radius: 4px;
   z-index: 5;
+}
+
+.canvas-controls .icon-btn {
+  width: auto;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  white-space: nowrap;
+  gap: 4px;
 }
 
 .canvas-controls .zoom-level {
@@ -685,7 +761,7 @@ input[type="number"] {
 
 .chip.active {
   background: var(--wf-accent);
-  color: white;
+  color: var(--wf-accent-text);
   border-color: var(--wf-accent);
 }
 
@@ -723,8 +799,8 @@ input[type="number"] {
 
 .text-link {
   background: transparent;
-  border: 1px dashed #ccc;
-  color: #555;
+  border: 1px dashed var(--wf-border-light);
+  color: var(--wf-text-muted);
 }
 
 /* Inspector Panel */
@@ -784,7 +860,7 @@ input[type="number"] {
 
 .prop-row label {
   font-size: 12px;
-  color: #444;
+  color: var(--wf-text-muted);
 }
 
 .color-box {
@@ -850,6 +926,22 @@ input[type="number"] {
   gap: 12px;
 }
 
+.status-input {
+  background: var(--wf-bg-darker);
+  border: 1px solid var(--wf-border-color);
+  color: var(--wf-text);
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+  width: 45px;
+  text-align: right;
+  font-family: inherit;
+  font-size: 11px;
+}
+.status-input:focus {
+  outline: none;
+  border-color: var(--wf-accent);
+}
+
 .toast {
   background: var(--wf-text);
   color: var(--wf-bg-darker);
@@ -876,7 +968,7 @@ input[type="number"] {
    ========================================= */
 .overlay-inset {
   position: absolute;
-  background: white;
+  background: var(--wf-bg);
   border: 1px solid var(--wf-border-light);
   box-shadow:
     var(--shadow-lg),
@@ -890,12 +982,12 @@ input[type="number"] {
   position: absolute;
   top: -10px;
   left: 10px;
-  background: white;
+  background: var(--wf-bg);
   padding: 0 4px;
   font-size: 10px;
   font-weight: bold;
-  color: #555;
-  border: 1px solid #555;
+  color: var(--wf-text-muted);
+  border: var(--wf-border);
 }
 
 /* Command Palette */
@@ -933,7 +1025,7 @@ input[type="number"] {
 }
 
 .cmd-list li span {
-  color: #999;
+  color: var(--wf-text-muted);
   font-size: 10px;
 }
 
