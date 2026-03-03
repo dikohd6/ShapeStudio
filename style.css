@@ -135,6 +135,17 @@ button.danger:hover {
   padding: 0;
 }
 
+.draw-color-preset {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+.draw-color-preset:hover {
+  transform: scale(1.1);
+  border-color: #fff;
+}
+
 .btn-row {
   display: flex;
   gap: 4px;
@@ -872,6 +883,24 @@ input[type="checkbox"] {
   cursor: pointer;
   position: relative;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.color-box:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+  filter: grayscale(100%);
+}
+
+.prop-row input:disabled,
+.prop-row select:disabled,
+.prop-row textarea:disabled,
+.ribbon-group input:disabled,
+.ribbon-group select:disabled,
+.ribbon-group button:disabled,
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .color-box::after {

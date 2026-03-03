@@ -24,6 +24,23 @@ document.addEventListener('DOMContentLoaded', () => {
             canvasW: 900,
             canvasH: 600
         },
+        drawConfig: {
+            mode: 'pen', // 'pen' or 'highlighter'
+            color: '#444444',
+            thickness: 2
+        },
+        textConfig: {
+            fontFamily: 'sans-serif',
+            fontSize: 24,
+            bold: false,
+            italic: false,
+            textAlign: 'center',
+            color: '#000000'
+        },
+        eraserConfig: {
+            mode: 'object', // 'object' or 'partial'
+            size: 20
+        },
         activeTool: 'select'
     };
 
@@ -113,7 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
         inspOpacity: document.getElementById('insp-opacity'),
         inspOpacityVal: document.getElementById('insp-opacity-val'),
         inspRad: document.getElementById('insp-rad'),
-        rotateBtn: document.getElementById('rotate-btn'),
         inspLockAspect: document.getElementById('insp-lock-aspect'),
         inspLockPosition: document.getElementById('insp-lock-position'),
         inspLabel: document.getElementById('insp-label'),
@@ -159,7 +175,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         modeBeginner: document.getElementById('mode-beginner'),
         modeAdvanced: document.getElementById('mode-advanced'),
-        advPanel: document.getElementById('advanced-preview-panel'),
 
         toolButtons: document.querySelectorAll('.tool-btn[data-tool]'),
         fileName: document.getElementById('file-name')
@@ -197,7 +212,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (type === 'rounded-rect') {
             w = 140; h = 80;
         } else if (type === 'text') {
-            w = 150; h = 40; fill = 'transparent'; stroke = 'transparent';
+            w = 150; h = 40; fill = 'transparent'; stroke = AppState.textConfig ? AppState.textConfig.color : '#000000';
+            actType = 'text';
         }
 
         return {
@@ -212,6 +228,11 @@ document.addEventListener('DOMContentLoaded', () => {
             stroke: stroke,
             opacity: 100,
             text: actType === 'text' ? 'Text Box' : '',
+            fontSize: AppState.textConfig ? AppState.textConfig.fontSize : 24,
+            fontFamily: AppState.textConfig ? AppState.textConfig.fontFamily : 'sans-serif',
+            fontWeight: AppState.textConfig && AppState.textConfig.bold ? 'bold' : 'normal',
+            fontStyle: AppState.textConfig && AppState.textConfig.italic ? 'italic' : 'normal',
+            textAlign: AppState.textConfig ? AppState.textConfig.textAlign : 'center',
             radius: radius,
             lockAspect: false,
             lockPosition: false,
@@ -371,9 +392,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             el.style.display = 'flex';
             el.style.alignItems = 'center';
-            el.style.justifyContent = 'center';
-            el.style.fontSize = Math.max(12, shape.h * 0.4) + 'px';
-            el.style.fontFamily = 'sans-serif';
+            el.style.justifyContent = shape.textAlign === 'left' ? 'flex-start' : (shape.textAlign === 'right' ? 'flex-end' : 'center');
+            el.style.fontSize = shape.fontSize ? `${shape.fontSize}px` : Math.max(12, shape.h * 0.4) + 'px';
+            el.style.fontFamily = shape.fontFamily || 'sans-serif';
+            el.style.fontWeight = shape.fontWeight || 'normal';
+            el.style.fontStyle = shape.fontStyle || 'normal';
+            el.style.textAlign = shape.textAlign || 'center';
             el.style.color = shape.stroke === 'transparent' ? '#000' : shape.stroke;
             if (shape.border !== 'none' && shape.stroke === 'transparent') {
                 el.style.border = '1px dashed #ccc';
@@ -393,8 +417,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const vw = shape.origW || shape.w;
             const vh = shape.origH || shape.h;
+            const sw = shape.strokeWidth || 2;
             svgWrapper.innerHTML = `<svg width="100%" height="100%" viewBox="0 0 ${vw} ${vh}" preserveAspectRatio="none" style="overflow:visible;">
-                <polyline points="${shape.points}" fill="none" stroke="${shape.stroke}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>
+                <polyline points="${shape.points}" fill="none" stroke="${shape.stroke}" stroke-width="${sw}" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>
             </svg>`;
             return;
         }
@@ -535,6 +560,31 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.toolbar.style.top = topPos + 'px';
             DOM.toolbar.style.left = leftPos + 'px';
 
+            // Disable all other inspector/ribbon inputs
+            [DOM.inspW, DOM.inspH, DOM.inspRot, DOM.inspRad, DOM.inspFill, DOM.inspStroke, DOM.inspOpacity, DOM.inspLockAspect, DOM.inspLockPosition, DOM.inspLabel, DOM.inspDesc].forEach(el => {
+                if (el) el.disabled = false;
+            });
+            [DOM.ribbonX, DOM.ribbonY, DOM.ribbonW, DOM.ribbonH, DOM.ribbonRot, DOM.ribbonFill, DOM.ribbonStroke, DOM.ribbonOpacity].forEach(el => {
+                if (el) el.disabled = false;
+            });
+            
+            // Enable ribbon action buttons
+            const ribbonActionSelectors = ['#ribbon-copy', '#ribbon-duplicate', '#ribbon-delete', '#bring-front', '#send-back'];
+            ribbonActionSelectors.forEach(selector => {
+                const el = document.querySelector(selector);
+                if (el) el.disabled = false;
+            });
+            
+            // Mini Toolbar visibility
+            if (DOM.btnMiniFill) DOM.btnMiniFill.style.display = (primary.type === 'text' || primary.type === 'path') ? 'none' : '';
+            if (DOM.btnMiniStroke) DOM.btnMiniStroke.style.display = '';
+
+            const alignSelectors = ['#align-left', '#align-center', '#align-right', '#align-top', '#align-middle', '#align-bottom'];
+            alignSelectors.forEach(selector => {
+                const el = document.querySelector(selector);
+                if (el) el.disabled = AppState.selection.length === 0; // enable for 1 or more to align to canvas
+            });
+            
             // Update Inspector
             if (DOM.inspW && document.activeElement !== DOM.inspW) DOM.inspW.value = primary.w;
             if (DOM.inspH && document.activeElement !== DOM.inspH) DOM.inspH.value = primary.h;
@@ -562,6 +612,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (DOM.ribbonStroke && document.activeElement !== DOM.ribbonStroke) DOM.ribbonStroke.value = primary.stroke;
             if (DOM.ribbonOpacity && document.activeElement !== DOM.ribbonOpacity) DOM.ribbonOpacity.value = primary.opacity;
             
+            // Text sync
+            if (primary.type === 'text') {
+                if (document.getElementById('text-font-family')) document.getElementById('text-font-family').value = primary.fontFamily || 'sans-serif';
+                if (document.getElementById('text-font-size')) document.getElementById('text-font-size').value = primary.fontSize || 24;
+                if (document.getElementById('text-color')) document.getElementById('text-color').value = primary.stroke === 'transparent' ? '#000000' : primary.stroke;
+                if (document.getElementById('text-bold')) document.getElementById('text-bold').classList.toggle('active', primary.fontWeight === 'bold');
+                if (document.getElementById('text-italic')) document.getElementById('text-italic').classList.toggle('active', primary.fontStyle === 'italic');
+                
+                ['left', 'center', 'right'].forEach(a => {
+                    const b = document.getElementById(`text-align-${a}`);
+                    if (b) b.classList.toggle('active', (primary.textAlign || 'center') === a);
+                });
+            }
         } else {
             DOM.toolbar.classList.add('hidden');
             if (DOM.inspW) DOM.inspW.value = '';
@@ -577,6 +640,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (DOM.inspLockPosition) DOM.inspLockPosition.checked = false;
             if (DOM.inspLabel) DOM.inspLabel.value = '';
             if (DOM.inspDesc) DOM.inspDesc.value = '';
+
+            // Disable fill and stroke when nothing is selected
+            [DOM.inspW, DOM.inspH, DOM.inspRot, DOM.inspRad, DOM.inspFill, DOM.inspStroke, DOM.inspOpacity, DOM.inspLockAspect, DOM.inspLockPosition, DOM.inspLabel, DOM.inspDesc].forEach(el => {
+                if (el) el.disabled = true;
+            });
+            [DOM.ribbonX, DOM.ribbonY, DOM.ribbonW, DOM.ribbonH, DOM.ribbonRot, DOM.ribbonFill, DOM.ribbonStroke, DOM.ribbonOpacity].forEach(el => {
+                if (el) el.disabled = true;
+            });
+            
+            // Disable ribbon action buttons requiring selection
+            const ribbonActionSelectors = ['#ribbon-copy', '#ribbon-duplicate', '#ribbon-delete', '#align-left', '#align-center', '#align-right', '#align-top', '#align-middle', '#align-bottom', '#bring-front', '#send-back'];
+            ribbonActionSelectors.forEach(selector => {
+                const el = document.querySelector(selector);
+                if (el) el.disabled = true;
+            });
         }
     }
 
@@ -695,10 +773,16 @@ document.addEventListener('DOMContentLoaded', () => {
         lastClickId = id;
 
         if (AppState.activeTool === 'eraser') {
-            AppState.shapes = AppState.shapes.filter(s => s.id !== id);
-            commitHistory();
-            renderAll();
-            showToast('Deleted shape — Undo (Cmd+Z)');
+            isErasing = true;
+            if (AppState.eraserConfig.mode === 'object') {
+                AppState.shapes = AppState.shapes.filter(s => s.id !== id);
+                renderAll();
+                showToast('Deleted shape');
+            } else {
+                performErase(e);
+            }
+            e.preventDefault();
+            e.stopPropagation();
             return;
         }
 
@@ -840,10 +924,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let isDrawing = false, currentDrawShape = null, currentRawPoints = [];
     let isMeasuring = false, measureStartX = 0, measureStartY = 0, measureEl = null;
     let isMarquee = false, marqueeStartX = 0, marqueeStartY = 0, marqueeEl = null;
+    let isErasing = false;
 
     DOM.canvas.addEventListener('mousedown', (e) => {
         const isCanvasClick = e.target === DOM.canvas || e.target.id === 'measure-overlay' || e.target.classList.contains('alignment-guide');
-        const isToolOverride = AppState.activeTool !== 'select' && AppState.activeTool !== 'eraser';
+        const isToolOverride = AppState.activeTool !== 'select';
 
         if (isCanvasClick || isToolOverride) {
             DOM.palette.classList.add('hidden');
@@ -913,24 +998,116 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentRawPoints = [{ x: ptX, y: ptY }];
 
                 shapeCounter++;
+                const isHighlight = AppState.drawConfig.mode === 'highlighter';
                 currentDrawShape = {
                     id: 's_' + shapeCounter,
                     type: 'path',
                     x: ptX, y: ptY, w: 1, h: 1, rot: 0,
                     origW: 1, origH: 1,
                     fill: 'transparent',
-                    stroke: '#444444',
-                    opacity: 100,
+                    stroke: AppState.drawConfig.color,
+                    strokeWidth: AppState.drawConfig.thickness,
+                    opacity: isHighlight ? 40 : 100, // UX Principle: System Match & Real World (highlighters are transmissive)
                     points: "0,0"
                 };
                 AppState.shapes.push(currentDrawShape);
                 renderAll();
+            } else if (AppState.activeTool === 'eraser') {
+                isErasing = true;
+                performErase(e);
             }
         }
     });
 
     // Panning/Drawing logic on mouse move globally
+    const eraserCursor = document.getElementById('eraser-cursor');
+    function updateEraserCursor() {
+        if (!eraserCursor) return;
+        if (AppState.activeTool === 'eraser') {
+            eraserCursor.style.display = 'block';
+            eraserCursor.style.width = AppState.eraserConfig.size + 'px';
+            eraserCursor.style.height = AppState.eraserConfig.size + 'px';
+        } else {
+            eraserCursor.style.display = 'none';
+        }
+    }
+
+    // Add function to do sweeping/partial erasing
+    function performErase(e) {
+        if (!isErasing) return;
+        const rect = DOM.canvas.getBoundingClientRect();
+        const ptX = (e.clientX - rect.left) / AppState.settings.zoom;
+        const ptY = (e.clientY - rect.top) / AppState.settings.zoom;
+        const eraseRadius = AppState.eraserConfig.size / 2;
+
+        let changed = false;
+        if (AppState.eraserConfig.mode === 'object') {
+            const initialCount = AppState.shapes.length;
+            AppState.shapes = AppState.shapes.filter(s => {
+                // Check simple bounding box intersection with cursor center
+                const inBox = ptX >= s.x && ptX <= s.x + s.w && ptY >= s.y && ptY <= s.y + s.h;
+                return !inBox;
+            });
+            if (AppState.shapes.length < initialCount) changed = true;
+        } else if (AppState.eraserConfig.mode === 'partial') {
+            AppState.shapes.forEach(s => {
+                if (s.type === 'path' && s.points) {
+                    const points = s.points.split(' ').map(p => {
+                        const [px, py] = p.split(',').map(Number);
+                        return { x: px + s.x, y: py + s.y }; 
+                    });
+                    
+                    const filtered = points.filter(p => {
+                        const dist = Math.sqrt((p.x - ptX)**2 + (p.y - ptY)**2);
+                        return dist > eraseRadius;
+                    });
+                    
+                    if (filtered.length < points.length) {
+                        changed = true;
+                        if (filtered.length === 0) {
+                            s._markedForDelete = true;
+                        } else {
+                            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                            filtered.forEach(p => {
+                                if (p.x < minX) minX = p.x;
+                                if (p.x > maxX) maxX = p.x;
+                                if (p.y < minY) minY = p.y;
+                                if (p.y > maxY) maxY = p.y;
+                            });
+                            s.x = minX;
+                            s.y = minY;
+                            s.w = Math.max(1, maxX - minX);
+                            s.h = Math.max(1, maxY - minY);
+                            s.origW = s.w;
+                            s.origH = s.h;
+                            s.points = filtered.map(p => `${p.x - minX},${p.y - minY}`).join(' ');
+                        }
+                    }
+                } else {
+                    // Normal shapes are immune to the partial path eraser, wait for whole object eraser
+                }
+            });
+            
+            if (changed) {
+                AppState.shapes = AppState.shapes.filter(s => !s._markedForDelete);
+            }
+        }
+        
+        if (changed) {
+            renderAll();
+        }
+    }
+
     document.addEventListener('mousemove', (e) => {
+        if (eraserCursor && AppState.activeTool === 'eraser') {
+            const rect = document.querySelector('.canvas-area').getBoundingClientRect();
+            eraserCursor.style.left = (e.clientX - rect.left) + 'px';
+            eraserCursor.style.top = (e.clientY - rect.top) + 'px';
+        }
+        if (isErasing) {
+            performErase(e);
+        }
+
         if (isPanning) {
             const dx = e.clientX - panStartX;
             const dy = e.clientY - panStartY;
@@ -1055,7 +1232,10 @@ document.addEventListener('DOMContentLoaded', () => {
             currentDrawShape = null;
             currentRawPoints = [];
             commitHistory();
-            document.getElementById('tool-select').click();
+        }
+        if (isErasing) {
+            isErasing = false;
+            commitHistory();
         }
     });
 
@@ -1194,6 +1374,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 duplicateSelected();
             }
+            if (e.key === 'c') {
+                if (AppState.selection.length > 0) {
+                    e.preventDefault();
+                    const ribbonCopy = document.getElementById('ribbon-copy');
+                    if (ribbonCopy) ribbonCopy.click();
+                }
+            }
+            if (e.key === 'v') {
+                e.preventDefault();
+                const ribbonPaste = document.getElementById('ribbon-paste');
+                // Allow shortcut paste if we have clipboard data
+                if (ribbonPaste && !ribbonPaste.disabled) ribbonPaste.click();
+            }
         }
     });
 
@@ -1300,19 +1493,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (DOM.rotateBtn) {
-        DOM.rotateBtn.addEventListener('click', () => {
-            if (AppState.selection.length === 0) return;
-            AppState.selection.forEach(id => {
-                const s = AppState.shapes.find(x => x.id === id);
-                if (s) s.rot = (s.rot || 0) + 15;
-            });
-            commitHistory();
-            renderAll();
-            showToast('Rotated +15° — Undo (Cmd+Z)');
-        });
-    }
-
     // Ribbon Arrange Actions
     const alignActions = {
         'align-left': (s, first) => s.x = first.x,
@@ -1327,15 +1507,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = document.getElementById(id);
         if (btn) {
             btn.addEventListener('click', () => {
-                if (AppState.selection.length < 2) return;
-                const first = AppState.shapes.find(x => x.id === AppState.selection[0]);
-                if (!first) return;
-                AppState.selection.forEach(selId => {
-                    const s = AppState.shapes.find(x => x.id === selId);
-                    if (s && s.id !== first.id) {
-                        alignActions[id](s, first);
+                if (AppState.selection.length === 0) return;
+                
+                if (AppState.selection.length === 1) {
+                    // Align to canvas when single item selected
+                    const s = AppState.shapes.find(x => x.id === AppState.selection[0]);
+                    if (s) {
+                        const canvasRef = { x: 0, y: 0, w: AppState.settings.canvasW, h: AppState.settings.canvasH };
+                        alignActions[id](s, canvasRef);
                     }
-                });
+                } else {
+                    // Align relative to group bounding box
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    
+                    const selectedShapes = AppState.shapes.filter(s => AppState.selection.includes(s.id));
+                    selectedShapes.forEach(s => {
+                        if (s.x < minX) minX = s.x;
+                        if (s.y < minY) minY = s.y;
+                        if (s.x + s.w > maxX) maxX = s.x + s.w;
+                        if (s.y + s.h > maxY) maxY = s.y + s.h;
+                    });
+                    
+                    const groupRef = { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+                    
+                    selectedShapes.forEach(s => {
+                        alignActions[id](s, groupRef);
+                    });
+                }
+                
                 commitHistory();
                 renderAll();
                 showToast(`Aligned — Undo (Cmd+Z)`);
@@ -1362,6 +1561,74 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAll();
         showToast('Sent to Back');
     });
+
+    // Clipboard State
+    let clipboard = null;
+
+    // Home Ribbon Actions
+    const ribbonUndo = document.getElementById('ribbon-undo');
+    const ribbonRedo = document.getElementById('ribbon-redo');
+    const ribbonCopy = document.getElementById('ribbon-copy');
+    const ribbonPaste = document.getElementById('ribbon-paste');
+    const ribbonDuplicate2 = document.getElementById('ribbon-duplicate');
+    const ribbonDelete = document.getElementById('ribbon-delete');
+
+    if (ribbonUndo) ribbonUndo.addEventListener('click', undo);
+    if (ribbonRedo) ribbonRedo.addEventListener('click', redo);
+    
+    if (ribbonCopy) ribbonCopy.addEventListener('click', () => {
+        if (AppState.selection.length === 0) return;
+        clipboard = AppState.shapes.filter(s => AppState.selection.includes(s.id)).map(s => JSON.parse(JSON.stringify(s)));
+        if (ribbonPaste) ribbonPaste.disabled = false;
+        showToast('Copied to clipboard');
+    });
+    
+    if (ribbonPaste) ribbonPaste.addEventListener('click', () => {
+        if (!clipboard || clipboard.length === 0) return;
+        const newSelection = [];
+        
+        // Deep copy the clipboard array to prevent reference sharing between pastes
+        const pasteData = JSON.parse(JSON.stringify(clipboard));
+        
+        pasteData.forEach(s => {
+            // Update the original clipboard objects so the next paste is further offset!
+            const originalClipItem = clipboard.find(c => c.id === s.id);
+            if (originalClipItem) {
+                 originalClipItem.x += 20;
+                 originalClipItem.y += 20;
+            }
+
+            s.x += 20;
+            s.y += 20;
+            shapeCounter++;
+            s.id = 's_' + shapeCounter;
+            AppState.shapes.push(s);
+            newSelection.push(s.id);
+        });
+        commitHistory();
+        AppState.selection = newSelection;
+        renderAll();
+        showToast('Pasted from clipboard');
+    });
+    
+    if (ribbonDuplicate2) ribbonDuplicate2.addEventListener('click', duplicateSelected);
+    if (ribbonDelete) ribbonDelete.addEventListener('click', removeSelectedShapes);
+
+    // Quick Add Buttons
+    const addQuickShape = (type) => {
+        const centerX = (DOM.canvas.clientWidth / 2) / AppState.settings.zoom - AppState.settings.panX;
+        const centerY = (DOM.canvas.clientHeight / 2) / AppState.settings.zoom - AppState.settings.panY;
+        const newShape = createShapeData(type, centerX, centerY);
+        addShape(newShape);
+    };
+    
+    const addSquare = document.getElementById('quick-add-square');
+    const addCircle = document.getElementById('quick-add-circle');
+    const addTriangle = document.getElementById('quick-add-triangle');
+    
+    if (addSquare) addSquare.addEventListener('click', () => addQuickShape('square'));
+    if (addCircle) addCircle.addEventListener('click', () => addQuickShape('circle'));
+    if (addTriangle) addTriangle.addEventListener('click', () => addQuickShape('triangle'));
 
     // Ribbon Templates Actions
     const addTemplate = (shapes) => {
@@ -1449,20 +1716,59 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Modes
+    function updateModeUI() {
+        const isAdv = AppState.mode === 'advanced';
+        
+        // Toggle active states on buttons
+        DOM.modeBeginner.classList.toggle('active', !isAdv);
+        DOM.modeAdvanced.classList.toggle('active', isAdv);
+
+        // Hide/show advanced elements (Progressive Disclosure)
+        const advElements = document.querySelectorAll('.adv-only');
+        advElements.forEach(el => {
+            el.style.display = isAdv ? '' : 'none';
+        });
+
+        // Hide/show right sidebar completely to heavily distinguish modes
+        const rightSidebar = document.querySelector('.right-sidebar');
+        if (rightSidebar) {
+            rightSidebar.style.display = isAdv ? 'flex' : 'none';
+        }
+        
+        // Show/hide specific advanced ribbon tabs
+        const advTabs = ['tab-transform', 'tab-arrange', 'tab-templates', 'tab-style'];
+        const ribbonTabs = document.querySelectorAll('.ribbon .tab');
+        ribbonTabs.forEach(t => {
+            if (advTabs.includes(t.dataset.target)) {
+                t.style.display = isAdv ? '' : 'none';
+            }
+        });
+
+        // If a hidden tab is currently active, switch back to Home
+        const activeTab = document.querySelector('.ribbon .tab.active');
+        if (!isAdv && activeTab && advTabs.includes(activeTab.dataset.target)) {
+            const homeTab = document.querySelector('.ribbon .tab[data-target="tab-home"]');
+            if (homeTab) homeTab.click();
+        }
+        
+        showToast(isAdv ? 'Advanced Mode: Full workspaces & tooling enabled.' : 'Beginner Mode: UI simplified.');
+    }
+
     if (DOM.modeBeginner && DOM.modeAdvanced) {
         DOM.modeBeginner.addEventListener('click', () => {
+            if (AppState.mode === 'beginner') return;
             AppState.mode = 'beginner';
-            DOM.modeBeginner.classList.add('active');
-            DOM.modeAdvanced.classList.remove('active');
-            DOM.advPanel.classList.add('hidden'); // hide advanced panel
+            updateModeUI();
         });
 
         DOM.modeAdvanced.addEventListener('click', () => {
+            if (AppState.mode === 'advanced') return;
             AppState.mode = 'advanced';
-            DOM.modeAdvanced.classList.add('active');
-            DOM.modeBeginner.classList.remove('active');
-            DOM.advPanel.classList.remove('hidden');
+            updateModeUI();
         });
+        
+        // Initialize UI based on starting mode
+        updateModeUI();
     }
 
     // Ribbon Tab Switching
@@ -1498,7 +1804,182 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (AppState.activeTool !== 'select') {
                     selectShape(null, false); // clear selection
                 }
+
+                // If Pen tool is chosen, open the Draw tab automatically
+                if (AppState.activeTool === 'pen') {
+                    const drawTab = document.querySelector('.ribbon .tab[data-target="tab-draw"]');
+                    if (drawTab) drawTab.click();
+                } else if (AppState.activeTool === 'text') {
+                    const textTab = document.querySelector('.ribbon .tab[data-target="tab-text"]');
+                    if (textTab) textTab.click();
+                } else if (AppState.activeTool === 'eraser') {
+                    const eraserTab = document.querySelector('.ribbon .tab[data-target="tab-eraser"]');
+                    if (eraserTab) eraserTab.click();
+                } else if (AppState.activeTool === 'shape') {
+                    const shapesTab = document.querySelector('.ribbon .tab[data-target="tab-shapes"]');
+                    if (shapesTab) shapesTab.click();
+                }
+
+                if (typeof updateEraserCursor === 'function') {
+                    updateEraserCursor();
+                }
             });
+        });
+    }
+
+    // Drawing Settings (Ribbon)
+    const drawModePen = document.getElementById('draw-mode-pen');
+    const drawModeHighlighter = document.getElementById('draw-mode-highlighter');
+    const drawColorInput = document.getElementById('draw-color');
+    const drawColorPresets = document.querySelectorAll('.draw-color-preset');
+    const drawThicknessInput = document.getElementById('draw-thickness');
+    const drawThicknessVal = document.getElementById('draw-thickness-val');
+
+    if (drawModePen && drawModeHighlighter) {
+        drawModePen.addEventListener('click', () => {
+            AppState.drawConfig.mode = 'pen';
+            drawModePen.classList.add('active');
+            drawModeHighlighter.classList.remove('active');
+            
+            // Set pen defaults (match user interface principles: consistency)
+            if (drawThicknessInput.value > 10) {
+                drawThicknessInput.value = 2;
+                drawThicknessInput.dispatchEvent(new Event('input'));
+            }
+        });
+        drawModeHighlighter.addEventListener('click', () => {
+            AppState.drawConfig.mode = 'highlighter';
+            drawModeHighlighter.classList.add('active');
+            drawModePen.classList.remove('active');
+            
+            // Set highlighter defaults
+            drawThicknessInput.value = 16;
+            drawThicknessInput.dispatchEvent(new Event('input'));
+            
+            // Often yellow
+            const yellow = '#ffea00';
+            drawColorInput.value = yellow;
+            AppState.drawConfig.color = yellow;
+        });
+    }
+
+    if (drawColorInput) {
+        drawColorInput.addEventListener('input', (e) => {
+            AppState.drawConfig.color = e.target.value;
+        });
+    }
+    
+    drawColorPresets.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const hex = btn.dataset.color;
+            AppState.drawConfig.color = hex;
+            if (drawColorInput) drawColorInput.value = hex;
+        });
+    });
+
+    if (drawThicknessInput && drawThicknessVal) {
+        drawThicknessInput.addEventListener('input', (e) => {
+            AppState.drawConfig.thickness = parseInt(e.target.value);
+            drawThicknessVal.textContent = AppState.drawConfig.thickness + 'px';
+        });
+    }
+
+    // Text Settings (Ribbon)
+    const textFontFamily = document.getElementById('text-font-family');
+    const textFontSize = document.getElementById('text-font-size');
+    const textBold = document.getElementById('text-bold');
+    const textItalic = document.getElementById('text-italic');
+    const textAlignLeft = document.getElementById('text-align-left');
+    const textAlignCenter = document.getElementById('text-align-center');
+    const textAlignRight = document.getElementById('text-align-right');
+    const textColor = document.getElementById('text-color');
+
+    function updateTextProp(prop, value, configCallback) {
+        if (configCallback) configCallback(value);
+        let changed = false;
+        AppState.selection.forEach(id => {
+            const s = AppState.shapes.find(x => x.id === id);
+            if (s && s.type === 'text') {
+                s[prop] = value;
+                changed = true;
+            }
+        });
+        if (changed) {
+            commitHistory();
+            renderAll();
+        }
+    }
+
+    if (textFontFamily) {
+        textFontFamily.addEventListener('change', e => {
+            updateTextProp('fontFamily', e.target.value, v => AppState.textConfig.fontFamily = v);
+        });
+    }
+
+    if (textFontSize) {
+        textFontSize.addEventListener('change', e => {
+            updateTextProp('fontSize', parseInt(e.target.value) || 24, v => AppState.textConfig.fontSize = v);
+        });
+    }
+
+    if (textColor) {
+        textColor.addEventListener('input', e => {
+            updateTextProp('stroke', e.target.value, v => AppState.textConfig.color = v);
+        });
+    }
+
+    if (textBold) {
+        textBold.addEventListener('click', () => {
+            const newVal = !AppState.textConfig.bold;
+            textBold.classList.toggle('active', newVal);
+            updateTextProp('fontWeight', newVal ? 'bold' : 'normal', () => AppState.textConfig.bold = newVal);
+        });
+    }
+
+    if (textItalic) {
+        textItalic.addEventListener('click', () => {
+            const newVal = !AppState.textConfig.italic;
+            textItalic.classList.toggle('active', newVal);
+            updateTextProp('fontStyle', newVal ? 'italic' : 'normal', () => AppState.textConfig.italic = newVal);
+        });
+    }
+
+    const textApplies = { 'left': textAlignLeft, 'center': textAlignCenter, 'right': textAlignRight };
+    Object.keys(textApplies).forEach(align => {
+        const btn = textApplies[align];
+        if (btn) {
+            btn.addEventListener('click', () => {
+                Object.values(textApplies).forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                updateTextProp('textAlign', align, v => AppState.textConfig.textAlign = v);
+            });
+        }
+    });
+
+    // Eraser Settings
+    const eraserModeObject = document.getElementById('eraser-mode-object');
+    const eraserModePartial = document.getElementById('eraser-mode-partial');
+    const eraserSizeInput = document.getElementById('eraser-size');
+    const eraserSizeVal = document.getElementById('eraser-size-val');
+
+    if (eraserModeObject && eraserModePartial) {
+        eraserModeObject.addEventListener('click', () => {
+            AppState.eraserConfig.mode = 'object';
+            eraserModeObject.classList.add('active');
+            eraserModePartial.classList.remove('active');
+        });
+        eraserModePartial.addEventListener('click', () => {
+            AppState.eraserConfig.mode = 'partial';
+            eraserModePartial.classList.add('active');
+            eraserModeObject.classList.remove('active');
+        });
+    }
+
+    if (eraserSizeInput && eraserSizeVal) {
+        eraserSizeInput.addEventListener('input', (e) => {
+            AppState.eraserConfig.size = parseInt(e.target.value);
+            eraserSizeVal.textContent = AppState.eraserConfig.size + 'px';
+            updateEraserCursor();
         });
     }
 
@@ -1627,9 +2108,13 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     function filterCommands(query) {
+        let availableCommands = commands;
+        if (AppState.mode === 'beginner') {
+            availableCommands = availableCommands.filter(cmd => cmd.id !== 'toggle-library');
+        }
         const q = query.trim().toLowerCase();
-        if (!q) return commands;
-        return commands.filter(cmd => cmd.keywords.some(k => k.includes(q)) || cmd.label.toLowerCase().includes(q));
+        if (!q) return availableCommands;
+        return availableCommands.filter(cmd => cmd.keywords.some(k => k.includes(q)) || cmd.label.toLowerCase().includes(q));
     }
 
     function hideCommandSuggestions() {
