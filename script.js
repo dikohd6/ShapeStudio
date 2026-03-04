@@ -728,6 +728,25 @@ document.addEventListener('DOMContentLoaded', () => {
         dragType = null;
     });
 
+    DOM.library.addEventListener('click', (e) => {
+        const item = e.target.closest('.shape-item');
+        if (item) {
+            const type = item.dataset.type;
+            const rect = DOM.canvas.getBoundingClientRect();
+            // Center of visible canvas
+            let x = (rect.width / 2) / AppState.settings.zoom;
+            let y = (rect.height / 2) / AppState.settings.zoom;
+            
+            if (AppState.settings.snapToGrid) {
+                x = Math.round(x / AppState.settings.gridSize) * AppState.settings.gridSize;
+                y = Math.round(y / AppState.settings.gridSize) * AppState.settings.gridSize;
+            }
+
+            const newShape = createShapeData(type, x, y);
+            addShape(newShape);
+        }
+    });
+
     // ==========================================
     // 7. CANVAS MANIPULATION (MOVE, RESIZE, ROTATE)
     // ==========================================
