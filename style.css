@@ -280,6 +280,13 @@ input[type="checkbox"] {
   margin: 0;
 }
 
+input[type="range"] {
+  border: none;
+  background: transparent;
+  padding: 0;
+  accent-color: var(--wf-accent, #007bff);
+}
+
 /* Mode Toggle */
 .mode-toggle {
   display: flex;
@@ -922,6 +929,10 @@ input[type="checkbox"] {
 .slider-row input[type="range"] {
   flex: 1;
   margin: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  accent-color: var(--wf-accent, #007bff);
 }
 
 .slider-row span {
@@ -961,7 +972,7 @@ input[type="checkbox"] {
   color: var(--wf-text);
   border-radius: var(--radius-sm);
   padding: 2px 4px;
-  width: 45px;
+  width: 65px;
   text-align: right;
   font-family: inherit;
   font-size: 11px;

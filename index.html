@@ -50,9 +50,7 @@
                 <button class="tab" data-target="tab-draw">Draw</button>
                 <button class="tab" data-target="tab-eraser">Eraser</button>
                 <button class="tab" data-target="tab-text">Text</button>
-                <button class="tab" data-target="tab-transform">Transform</button>
                 <button class="tab" data-target="tab-arrange">Arrange</button>
-                <button class="tab" data-target="tab-style">Style</button>
                 <button class="tab" data-target="tab-templates">Templates</button>
             </div>
             
@@ -82,9 +80,9 @@
                 </div>
                 <div class="ribbon-group">
                     <span class="label">Quick Add:</span>
-                    <button class="btn icon-btn" id="quick-add-square" title="Add Square" aria-label="Add Square">🔳</button>
-                    <button class="btn icon-btn" id="quick-add-circle" title="Add Circle" aria-label="Add Circle">⏺</button>
-                    <button class="btn icon-btn" id="quick-add-triangle" title="Add Triangle" aria-label="Add Triangle">▲</button>
+                    <button class="btn icon-btn" id="quick-add-square" draggable="true" data-type="square" title="Add Square" aria-label="Add Square">🔳</button>
+                    <button class="btn icon-btn" id="quick-add-circle" draggable="true" data-type="circle" title="Add Circle" aria-label="Add Circle">⏺</button>
+                    <button class="btn icon-btn" id="quick-add-triangle" draggable="true" data-type="triangle" title="Add Triangle" aria-label="Add Triangle">▲</button>
                 </div>
             </div>
 
@@ -153,24 +151,6 @@
                 </div>
             </div>
 
-            <!-- Transform Content -->
-            <div class="ribbon-content hidden" id="tab-transform">
-                <div class="ribbon-group">
-                    <span class="label">Position:</span>
-                    <label>X: <input type="number" id="ribbon-x" class="input-mini"></label>
-                    <label>Y: <input type="number" id="ribbon-y" class="input-mini"></label>
-                </div>
-                <div class="ribbon-group">
-                    <span class="label">Size:</span>
-                    <label>W: <input type="number" id="ribbon-w" class="input-mini"></label>
-                    <label>H: <input type="number" id="ribbon-h" class="input-mini"></label>
-                </div>
-                <div class="ribbon-group">
-                    <span class="label">Rotate:</span>
-                    <label>Deg: <input type="number" id="ribbon-rot" class="input-mini"></label>
-                </div>
-            </div>
-
             <!-- Arrange Content -->
             <div class="ribbon-content hidden" id="tab-arrange">
                 <div class="ribbon-group">
@@ -186,19 +166,6 @@
                     <span class="label">Order:</span>
                     <button class="btn icon-text-btn" id="bring-front" disabled><span class="icon">⬆️</span> Bring to Front</button>
                     <button class="btn icon-text-btn" id="send-back" disabled><span class="icon">⬇️</span> Send to Back</button>
-                </div>
-            </div>
-
-            <!-- Style Content -->
-            <div class="ribbon-content hidden" id="tab-style">
-                <div class="ribbon-group">
-                    <span class="label">Colors:</span>
-                    <label>Fill: <input type="color" id="ribbon-fill" value="#eaeaea"></label>
-                    <label>Stroke: <input type="color" id="ribbon-stroke" value="#444444"></label>
-                </div>
-                <div class="ribbon-group">
-                    <span class="label">Appearance:</span>
-                    <label>Opacity: <input type="range" id="ribbon-opacity" min="0" max="100" value="100"></label>
                 </div>
             </div>
 
@@ -292,7 +259,7 @@
                     <div class="overlay-inset confirm-dialog-inset hidden" id="confirm-dialog">
                         <div class="dialog">
                             <h3>Clear Canvas?</h3>
-                            <p>This will permanently remove all shapes. You can Undo (Cmd+Z) if needed.</p>
+                            <p>This will permanently remove everything. You can Undo (Cmd+Z) if needed.</p>
                             <div class="dialog-actions">
                                 <button class="btn" id="cancel-clear">Cancel</button>
                                 <button class="btn primary danger" id="confirm-clear">Clear Workspace</button>
@@ -334,20 +301,6 @@
                         <h2>Properties</h2>
                     </div>
                     <div class="panel-body accordion-group">
-                        <div class="accordion">
-                            <div class="acc-header">▶ Geometry</div>
-                            <div class="acc-body" style="display:none;">
-                                <div class="input-group-row">
-                                    <label title="Width">W</label><input type="number" id="insp-w" value="120">
-                                    <label title="Height">H</label><input type="number" id="insp-h" value="80">
-                                </div>
-                                <div class="input-group-row">
-                                    <label title="Rotation">⟳</label><input type="number" id="insp-rot" value="0">
-                                    <label title="Corner radius">◠</label><input type="number" id="insp-rad" value="8">
-                                </div>
-                            </div>
-                        </div>
-
                         <div class="accordion" id="inspector-style">
                             <div class="acc-header">▶ Style</div>
                             <div class="acc-body" style="display:none;">
@@ -361,6 +314,24 @@
                                     <label>Opacity</label>
                                     <input type="range" min="0" max="100" value="100" id="insp-opacity">
                                     <span id="insp-opacity-val">100%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion">
+                            <div class="acc-header">▶ Geometry</div>
+                            <div class="acc-body" style="display:none;">
+                                <div class="input-group-row">
+                                    <label title="X Position">X</label><input type="number" id="insp-x" value="0">
+                                    <label title="Y Position">Y</label><input type="number" id="insp-y" value="0">
+                                </div>
+                                <div class="input-group-row">
+                                    <label title="Width">W</label><input type="number" id="insp-w" value="120">
+                                    <label title="Height">H</label><input type="number" id="insp-h" value="80">
+                                </div>
+                                <div class="input-group-row">
+                                    <label title="Rotation">⟳</label><input type="number" id="insp-rot" value="0">
+                                    <label title="Corner radius">◠</label><input type="number" id="insp-rad" value="8">
                                 </div>
                             </div>
                         </div>
@@ -400,7 +371,7 @@
         <!-- Bottom Status Bar -->
         <footer class="status-bar">
             <div class="status-left">
-                <span class="tip">Tip: Drag shapes from the library onto the canvas.</span>
+                <span class="tip">Tip: Hold Shift while resizing shapes to maintain their proportions.</span>
             </div>
             <div class="status-center">
                 <span>W: <input type="number" id="canvas-w" class="status-input" value="900" title="Canvas Width"></span>
@@ -408,8 +379,6 @@
                 <span>H: <input type="number" id="canvas-h" class="status-input" value="600" title="Canvas Height"></span>
                 <span class="divider"></span>
                 <span>Snap (px): <input type="number" id="snap-grid" class="status-input" value="20" title="Grid Snap Size"></span>
-                <span class="divider"></span>
-                <span>X: <span id="mouse-x">0</span>, Y: <span id="mouse-y">0</span></span>
                 <span class="divider"></span>
                 <span id="selection-counter">0 Selected</span>
             </div>

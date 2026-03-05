@@ -122,6 +122,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ghost: document.getElementById('drag-ghost'),
         toolbar: document.getElementById('context-toolbar'),
 
+        inspX: document.getElementById('insp-x'),
+        inspY: document.getElementById('insp-y'),
         inspW: document.getElementById('insp-w'),
         inspH: document.getElementById('insp-h'),
         inspRot: document.getElementById('insp-rot'),
@@ -145,18 +147,9 @@ document.addEventListener('DOMContentLoaded', () => {
         canvasW: document.getElementById('canvas-w'),
         canvasH: document.getElementById('canvas-h'),
         snapGrid: document.getElementById('snap-grid'),
-        mouseX: document.getElementById('mouse-x'),
-        mouseY: document.getElementById('mouse-y'),
 
         // Ribbon specific additions
-        ribbonX: document.getElementById('ribbon-x'),
-        ribbonY: document.getElementById('ribbon-y'),
-        ribbonW: document.getElementById('ribbon-w'),
-        ribbonH: document.getElementById('ribbon-h'),
-        ribbonRot: document.getElementById('ribbon-rot'),
-        ribbonFill: document.getElementById('ribbon-fill'),
-        ribbonStroke: document.getElementById('ribbon-stroke'),
-        ribbonOpacity: document.getElementById('ribbon-opacity'),
+        // DOM.ribbon* properties removed to clean up code
 
         library: document.getElementById('library-grid'),
 
@@ -346,16 +339,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (shape.type === 'text') {
-                el.addEventListener('input', () => {
-                    shape.text = el.innerText;
+                el.addEventListener('input', (e) => {
+                    shape.text = e.target.innerText;
                 });
 
-                el.addEventListener('blur', () => {
-                    el.contentEditable = 'false';
-                    el.style.cursor = 'default';
-                    el.style.outline = 'none';
-                    window.getSelection().removeAllRanges();
-                    commitHistory();
+                el.addEventListener('focusout', (e) => {
+                    if (e.target.classList.contains('text-inner')) {
+                        e.target.contentEditable = 'false';
+                        e.target.style.cursor = 'default';
+                        el.style.outline = 'none';
+                        window.getSelection().removeAllRanges();
+                        commitHistory();
+                    }
                 });
             }
 
@@ -387,18 +382,27 @@ document.addEventListener('DOMContentLoaded', () => {
         el.style.border = 'none';
 
         if (shape.type === 'text') {
-            if (el.contentEditable !== 'true') {
-                el.innerText = shape.text || 'Text Box';
+            let inner = el.querySelector('.text-inner');
+            if (!inner) {
+                inner = document.createElement('div');
+                inner.className = 'text-inner';
+                inner.style.width = '100%';
+                inner.style.height = '100%';
+                inner.style.outline = 'none';
+                el.appendChild(inner);
             }
-            el.style.display = 'flex';
-            el.style.alignItems = 'center';
-            el.style.justifyContent = shape.textAlign === 'left' ? 'flex-start' : (shape.textAlign === 'right' ? 'flex-end' : 'center');
-            el.style.fontSize = shape.fontSize ? `${shape.fontSize}px` : Math.max(12, shape.h * 0.4) + 'px';
-            el.style.fontFamily = shape.fontFamily || 'sans-serif';
-            el.style.fontWeight = shape.fontWeight || 'normal';
-            el.style.fontStyle = shape.fontStyle || 'normal';
-            el.style.textAlign = shape.textAlign || 'center';
-            el.style.color = shape.stroke === 'transparent' ? '#000' : shape.stroke;
+            if (inner.contentEditable !== 'true') {
+                inner.innerText = shape.text || 'Text Box';
+            }
+            inner.style.display = 'flex';
+            inner.style.alignItems = 'center';
+            inner.style.justifyContent = shape.textAlign === 'left' ? 'flex-start' : (shape.textAlign === 'right' ? 'flex-end' : 'center');
+            inner.style.fontSize = shape.fontSize ? `${shape.fontSize}px` : Math.max(12, shape.h * 0.4) + 'px';
+            inner.style.fontFamily = shape.fontFamily || 'sans-serif';
+            inner.style.fontWeight = shape.fontWeight || 'normal';
+            inner.style.fontStyle = shape.fontStyle || 'normal';
+            inner.style.textAlign = shape.textAlign || 'center';
+            inner.style.color = shape.stroke === 'transparent' ? '#000' : shape.stroke;
             if (shape.border !== 'none' && shape.stroke === 'transparent') {
                 el.style.border = '1px dashed #ccc';
             }
@@ -560,14 +564,16 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.toolbar.style.top = topPos + 'px';
             DOM.toolbar.style.left = leftPos + 'px';
 
-            // Disable all other inspector/ribbon inputs
-            [DOM.inspW, DOM.inspH, DOM.inspRot, DOM.inspRad, DOM.inspFill, DOM.inspStroke, DOM.inspOpacity, DOM.inspLockAspect, DOM.inspLockPosition, DOM.inspLabel, DOM.inspDesc].forEach(el => {
+            // Disable all other inspector inputs
+            [DOM.inspX, DOM.inspY, DOM.inspW, DOM.inspH, DOM.inspRot, DOM.inspRad, DOM.inspFill, DOM.inspStroke, DOM.inspOpacity, DOM.inspLockAspect, DOM.inspLockPosition, DOM.inspLabel, DOM.inspDesc].forEach(el => {
                 if (el) el.disabled = false;
             });
-            [DOM.ribbonX, DOM.ribbonY, DOM.ribbonW, DOM.ribbonH, DOM.ribbonRot, DOM.ribbonFill, DOM.ribbonStroke, DOM.ribbonOpacity].forEach(el => {
-                if (el) el.disabled = false;
-            });
-            
+
+            // Specific overrides based on shape type
+            if (primary.type === 'text' && DOM.inspFill) {
+                DOM.inspFill.disabled = true;
+            }
+
             // Enable ribbon action buttons
             const ribbonActionSelectors = ['#ribbon-copy', '#ribbon-duplicate', '#ribbon-delete', '#bring-front', '#send-back'];
             ribbonActionSelectors.forEach(selector => {
@@ -586,31 +592,26 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             // Update Inspector
-            if (DOM.inspW && document.activeElement !== DOM.inspW) DOM.inspW.value = primary.w;
-            if (DOM.inspH && document.activeElement !== DOM.inspH) DOM.inspH.value = primary.h;
+            if (DOM.inspX && document.activeElement !== DOM.inspX) DOM.inspX.value = Math.round(primary.x);
+            if (DOM.inspY && document.activeElement !== DOM.inspY) DOM.inspY.value = Math.round(primary.y);
+            if (DOM.inspW && document.activeElement !== DOM.inspW) DOM.inspW.value = Math.round(primary.w);
+            if (DOM.inspH && document.activeElement !== DOM.inspH) DOM.inspH.value = Math.round(primary.h);
             if (DOM.inspRot && document.activeElement !== DOM.inspRot) DOM.inspRot.value = primary.rot;
             if (DOM.inspRad && document.activeElement !== DOM.inspRad) DOM.inspRad.value = primary.radius != null ? primary.radius : 0;
             if (DOM.inspFill && document.activeElement !== DOM.inspFill) DOM.inspFill.value = primary.fill;
             if (DOM.inspStroke && document.activeElement !== DOM.inspStroke) DOM.inspStroke.value = primary.stroke;
-            if (DOM.inspOpacity && document.activeElement !== DOM.inspOpacity) {
-                DOM.inspOpacity.value = primary.opacity;
-                if (DOM.inspOpacityVal) DOM.inspOpacityVal.innerText = primary.opacity + '%';
+            if (DOM.inspOpacity) {
+                if (document.activeElement !== DOM.inspOpacity) {
+                    DOM.inspOpacity.value = primary.opacity;
+                }
+                if (DOM.inspOpacityVal) {
+                    DOM.inspOpacityVal.innerText = primary.opacity + '%';
+                }
             }
             if (DOM.inspLockAspect && document.activeElement !== DOM.inspLockAspect) DOM.inspLockAspect.checked = !!primary.lockAspect;
             if (DOM.inspLockPosition && document.activeElement !== DOM.inspLockPosition) DOM.inspLockPosition.checked = !!primary.lockPosition;
             if (DOM.inspLabel && document.activeElement !== DOM.inspLabel) DOM.inspLabel.value = primary.label || '';
             if (DOM.inspDesc && document.activeElement !== DOM.inspDesc) DOM.inspDesc.value = primary.description || '';
-            
-            // Update Ribbon Inputs
-            if (DOM.ribbonX && document.activeElement !== DOM.ribbonX) DOM.ribbonX.value = primary.x;
-            if (DOM.ribbonY && document.activeElement !== DOM.ribbonY) DOM.ribbonY.value = primary.y;
-            if (DOM.ribbonW && document.activeElement !== DOM.ribbonW) DOM.ribbonW.value = primary.w;
-            if (DOM.ribbonH && document.activeElement !== DOM.ribbonH) DOM.ribbonH.value = primary.h;
-            if (DOM.ribbonRot && document.activeElement !== DOM.ribbonRot) DOM.ribbonRot.value = primary.rot;
-            if (DOM.inspRad && primary.radius != null && document.activeElement !== DOM.inspRad) DOM.inspRad.value = primary.radius;
-            if (DOM.ribbonFill && document.activeElement !== DOM.ribbonFill) DOM.ribbonFill.value = primary.fill;
-            if (DOM.ribbonStroke && document.activeElement !== DOM.ribbonStroke) DOM.ribbonStroke.value = primary.stroke;
-            if (DOM.ribbonOpacity && document.activeElement !== DOM.ribbonOpacity) DOM.ribbonOpacity.value = primary.opacity;
             
             // Text sync
             if (primary.type === 'text') {
@@ -627,25 +628,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else {
             DOM.toolbar.classList.add('hidden');
+            if (DOM.inspX) DOM.inspX.value = '';
+            if (DOM.inspY) DOM.inspY.value = '';
             if (DOM.inspW) DOM.inspW.value = '';
             if (DOM.inspH) DOM.inspH.value = '';
             if (DOM.inspRot) DOM.inspRot.value = '';
             
-            if (DOM.ribbonX) DOM.ribbonX.value = '';
-            if (DOM.ribbonY) DOM.ribbonY.value = '';
-            if (DOM.ribbonW) DOM.ribbonW.value = '';
-            if (DOM.ribbonH) DOM.ribbonH.value = '';
-            if (DOM.ribbonRot) DOM.ribbonRot.value = '';
             if (DOM.inspLockAspect) DOM.inspLockAspect.checked = false;
             if (DOM.inspLockPosition) DOM.inspLockPosition.checked = false;
             if (DOM.inspLabel) DOM.inspLabel.value = '';
             if (DOM.inspDesc) DOM.inspDesc.value = '';
 
             // Disable fill and stroke when nothing is selected
-            [DOM.inspW, DOM.inspH, DOM.inspRot, DOM.inspRad, DOM.inspFill, DOM.inspStroke, DOM.inspOpacity, DOM.inspLockAspect, DOM.inspLockPosition, DOM.inspLabel, DOM.inspDesc].forEach(el => {
-                if (el) el.disabled = true;
-            });
-            [DOM.ribbonX, DOM.ribbonY, DOM.ribbonW, DOM.ribbonH, DOM.ribbonRot, DOM.ribbonFill, DOM.ribbonStroke, DOM.ribbonOpacity].forEach(el => {
+            [DOM.inspX, DOM.inspY, DOM.inspW, DOM.inspH, DOM.inspRot, DOM.inspRad, DOM.inspFill, DOM.inspStroke, DOM.inspOpacity, DOM.inspLockAspect, DOM.inspLockPosition, DOM.inspLabel, DOM.inspDesc].forEach(el => {
                 if (el) el.disabled = true;
             });
             
@@ -676,8 +671,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let dragType = null;
 
-    DOM.library.addEventListener('dragstart', (e) => {
-        const item = e.target.closest('.shape-item');
+    document.addEventListener('dragstart', (e) => {
+        const item = e.target.closest('.shape-item, [id^="quick-add-"]');
         if (item) {
             dragType = item.dataset.type;
             e.dataTransfer.setData('text/plain', dragType);
@@ -764,29 +759,34 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.classList.contains('resize-handle') || e.target.classList.contains('rotate-handle')) return;
 
         const el = document.getElementById(id);
-        if (el && el.contentEditable === 'true') {
+        const textInner = el ? el.querySelector('.text-inner') : null;
+        if (el && (el.contentEditable === 'true' || (textInner && textInner.contentEditable === 'true'))) {
             e.stopPropagation(); // prevent background canvas from deselecting
             return; // let native text selection handle it
         }
 
-        const shape = AppState.shapes.find(s => s.id === id);
         const now = Date.now();
-        if (lastClickId === id && (now - lastClickTime) < 900 && shape && shape.type === 'text') {
-            showToast('Editing text...');
-            el.contentEditable = 'true';
-            el.style.cursor = 'text';
-            el.style.outline = '2px solid #007bff';
-            setTimeout(() => {
-                el.focus();
-                const range = document.createRange();
-                range.selectNodeContents(el);
-                const sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(range);
-            }, 50);
-            e.stopPropagation();
-            lastClickId = null;
-            return;
+        if (now - lastClickTime < 300 && lastClickId === id) {
+            const shape = AppState.shapes.find(s => s.id === id);
+            if (shape && shape.type === 'text') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (textInner) {
+                    textInner.contentEditable = 'true';
+                    textInner.focus();
+                    textInner.style.cursor = 'text';
+                    el.style.outline = '2px dashed #007bff';
+                    
+                    // Select text and put cursor at end
+                    const range = document.createRange();
+                    const sel = window.getSelection();
+                    range.selectNodeContents(textInner);
+                    range.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+                return;
+            }
         }
         lastClickTime = now;
         lastClickId = id;
@@ -1325,6 +1325,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    bindInput(DOM.inspX, 'x');
+    bindInput(DOM.inspY, 'y');
     bindInput(DOM.inspW, 'w');
     bindInput(DOM.inspH, 'h');
     bindInput(DOM.inspRot, 'rot');
@@ -1336,16 +1338,6 @@ document.addEventListener('DOMContentLoaded', () => {
     bindCheckbox(DOM.inspLockPosition, 'lockPosition');
     bindInput(DOM.inspLabel, 'label', true);
     bindInput(DOM.inspDesc, 'description', true);
-
-    // Ribbon input bindings
-    bindInput(DOM.ribbonX, 'x');
-    bindInput(DOM.ribbonY, 'y');
-    bindInput(DOM.ribbonW, 'w');
-    bindInput(DOM.ribbonH, 'h');
-    bindInput(DOM.ribbonRot, 'rot');
-    bindInput(DOM.ribbonFill, 'fill', true);
-    bindInput(DOM.ribbonStroke, 'stroke', true);
-    bindInput(DOM.ribbonOpacity, 'opacity');
 
     // Canvas settings binding
     if (DOM.canvasW) {
@@ -1382,14 +1374,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
 
     document.addEventListener('keydown', (e) => {
-        // Backspace / Delete
+        // Custom hotkeys (Cmd/Ctrl)
         if (e.key === 'Backspace' || e.key === 'Delete') {
-            if (e.target.tagName !== 'INPUT') {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && e.target.contentEditable !== 'true') {
                 removeSelectedShapes();
             }
         }
-
-        // Custom hotkeys (Cmd/Ctrl)
         if (e.metaKey || e.ctrlKey) {
             if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
             if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
@@ -1714,7 +1704,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (DOM.btnClearCanvas) {
         DOM.btnClearCanvas.addEventListener('click', () => {
             openClearConfirm();
-            showToast('Clear Canvas: confirm to remove all shapes.');
+            showToast('Clear Canvas: confirm to remove everything.');
         });
     }
 
@@ -1773,7 +1763,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Show/hide specific advanced ribbon tabs
-        const advTabs = ['tab-transform', 'tab-arrange', 'tab-templates', 'tab-style'];
+        const advTabs = ['tab-arrange', 'tab-templates'];
         const ribbonTabs = document.querySelectorAll('.ribbon .tab');
         ribbonTabs.forEach(t => {
             if (advTabs.includes(t.dataset.target)) {
@@ -2028,13 +2018,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (toggleLibraryBtn && libraryPanel && rightSidebar) {
         toggleLibraryBtn.addEventListener('click', () => {
-            const isHidden = rightSidebar.style.display === 'none';
+            const isHidden = libraryPanel.style.display === 'none';
             if (isHidden) {
-                rightSidebar.style.display = 'flex';
+                if (AppState.mode === 'advanced') {
+                    rightSidebar.style.display = 'flex';
+                }
                 libraryPanel.style.display = 'flex';
                 showToast('Library opened — drag shapes onto canvas.');
             } else {
-                rightSidebar.style.display = 'none';
+                libraryPanel.style.display = 'none';
                 showToast('Library hidden — toggle to show again.');
             }
         });
@@ -2042,7 +2034,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (closeLibraryBtn && libraryPanel && rightSidebar) {
         closeLibraryBtn.addEventListener('click', () => {
-            rightSidebar.style.display = 'none';
+            libraryPanel.style.display = 'none';
         });
     }
 
