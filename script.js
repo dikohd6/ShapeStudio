@@ -418,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const vw = shape.origW || shape.w;
             const vh = shape.origH || shape.h;
             const sw = shape.strokeWidth || 2;
-            svgWrapper.innerHTML = `<svg width="100%" height="100%" viewBox="0 0 ${vw} ${vh}" preserveAspectRatio="none" style="overflow:visible;">
+            svgWrapper.innerHTML = `<svg width="100%" height="100%" viewBox="0 0 ${vw} ${vh}" preserveAspectRatio="none" style="overflow:visible; display:block;">
                 <polyline points="${shape.points}" fill="none" stroke="${shape.stroke}" stroke-width="${sw}" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>
             </svg>`;
             return;
@@ -488,7 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (points) {
             const sw = shape.stroke === 'transparent' ? 0 : 2;
-            visual.innerHTML = `<svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="overflow:visible;">
+            visual.innerHTML = `<svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="overflow:visible; display:block;">
                 <polygon points="${points}" fill="${shape.fill}" stroke="${shape.stroke}" stroke-width="${sw}" vector-effect="non-scaling-stroke" stroke-linejoin="miter"/>
             </svg>`;
         }
@@ -897,8 +897,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     nh = Math.round(nh / AppState.settings.gridSize) * AppState.settings.gridSize;
                 }
 
-                shape.x = nx; shape.y = ny;
-                shape.w = Math.max(10, nw); shape.h = Math.max(10, nh);
+                shape.w = Math.max(10, nw);
+                shape.h = Math.max(10, nh);
+
+                // Tie the x/y coordinates cleanly to the anchored opposite edges to prevent shape from floating away when minimized
+                if (resizeHandle.includes('w')) {
+                    shape.x = initial.x + initial.w - shape.w;
+                } else {
+                    shape.x = nx;
+                }
+
+                if (resizeHandle.includes('n')) {
+                    shape.y = initial.y + initial.h - shape.h;
+                } else {
+                    shape.y = ny;
+                }
             }
             else if (isRotating) {
                 // calculate angle from shape center
@@ -946,6 +959,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let isErasing = false;
 
     DOM.canvas.addEventListener('mousedown', (e) => {
+        // Ignore clicks on UI overlays to prevent tools from stealing focus and hiding them
+        if (e.target.closest('.overlay-inset') || e.target.closest('.mini-toolbar')) {
+            return;
+        }
+
         const isCanvasClick = e.target === DOM.canvas || e.target.id === 'measure-overlay' || e.target.classList.contains('alignment-guide');
         const isToolOverride = AppState.activeTool !== 'select';
 
@@ -1002,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 measureEl.style.height = '100%';
                 measureEl.style.pointerEvents = 'none';
                 measureEl.style.zIndex = '9999';
-                measureEl.innerHTML = `<svg width="100%" height="100%" style="overflow:visible;">
+                measureEl.innerHTML = `<svg width="100%" height="100%" style="overflow:visible; display:block;">
                     <line x1="${measureStartX}" y1="${measureStartY}" x2="${measureStartX}" y2="${measureStartY}" stroke="#007bff" stroke-width="2" stroke-dasharray="4,4" />
                     <rect x="0" y="0" width="0" height="0" fill="#222" rx="4" id="measure-bg" />
                     <text x="${measureStartX}" y="${measureStartY}" fill="#fff" font-family="sans-serif" font-size="12px" text-anchor="middle" alignment-baseline="middle" id="measure-text">0px</text>
