@@ -484,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (shape.type === 'chevron-left')     points = "75,0 0,50 75,100 100,75 50,50 100,25";
         else if (shape.type === 'chevron-up')       points = "0,75 50,0 100,75 75,75 50,30 25,75";
         else if (shape.type === 'chevron-down')     points = "0,25 50,100 100,25 75,25 50,70 25,25";
-        else if (shape.type === 'double-arrow')     points = "0,50 25,25 25,40 75,40 75,25 100,50 75,75 75,60 25,60 25,75";
+        else if (shape.type === 'double-arrow')     points = "0,50 25,0 25,25 75,25 75,0 100,50 75,100 75,75 25,75 25,100";
         else if (shape.type === 'cross')            points = "20,0 50,30 80,0 100,20 70,50 100,80 80,100 50,70 20,100 0,80 30,50 0,20";
         else if (shape.type === 'plus')             points = "35,0 65,0 65,35 100,35 100,65 65,65 65,100 35,100 35,65 0,65 0,35 35,35";
         else if (shape.type === 'tag')              points = "0,0 75,0 100,50 75,100 0,100 0,0";
@@ -570,7 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Specific overrides based on shape type
-            if (primary.type === 'text' && DOM.inspFill) {
+            if ((primary.type === 'text' || primary.type === 'path') && DOM.inspFill) {
                 DOM.inspFill.disabled = true;
             }
 
@@ -598,8 +598,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (DOM.inspH && document.activeElement !== DOM.inspH) DOM.inspH.value = Math.round(primary.h);
             if (DOM.inspRot && document.activeElement !== DOM.inspRot) DOM.inspRot.value = primary.rot;
             if (DOM.inspRad && document.activeElement !== DOM.inspRad) DOM.inspRad.value = primary.radius != null ? primary.radius : 0;
-            if (DOM.inspFill && document.activeElement !== DOM.inspFill) DOM.inspFill.value = primary.fill;
-            if (DOM.inspStroke && document.activeElement !== DOM.inspStroke) DOM.inspStroke.value = primary.stroke;
+            if (DOM.inspFill && document.activeElement !== DOM.inspFill) {
+                DOM.inspFill.value = primary.fill !== 'transparent' ? primary.fill : '#ffffff';
+                DOM.inspFill.style.backgroundColor = primary.fill;
+            }
+            if (DOM.inspStroke && document.activeElement !== DOM.inspStroke) {
+                DOM.inspStroke.value = primary.stroke !== 'transparent' ? primary.stroke : '#ffffff';
+                DOM.inspStroke.style.backgroundColor = primary.stroke;
+            }
             if (DOM.inspOpacity) {
                 if (document.activeElement !== DOM.inspOpacity) {
                     DOM.inspOpacity.value = primary.opacity;
@@ -617,7 +623,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (primary.type === 'text') {
                 if (document.getElementById('text-font-family')) document.getElementById('text-font-family').value = primary.fontFamily || 'sans-serif';
                 if (document.getElementById('text-font-size')) document.getElementById('text-font-size').value = primary.fontSize || 24;
-                if (document.getElementById('text-color')) document.getElementById('text-color').value = primary.stroke === 'transparent' ? '#000000' : primary.stroke;
+                if (document.getElementById('text-color')) {
+                    const tColor = primary.stroke === 'transparent' ? '#000000' : primary.stroke;
+                    document.getElementById('text-color').value = tColor;
+                    document.getElementById('text-color').style.backgroundColor = tColor;
+                }
                 if (document.getElementById('text-bold')) document.getElementById('text-bold').classList.toggle('active', primary.fontWeight === 'bold');
                 if (document.getElementById('text-italic')) document.getElementById('text-italic').classList.toggle('active', primary.fontStyle === 'italic');
                 
@@ -1291,6 +1301,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isNaN(val)) return;
             }
 
+            if (input.classList.contains('color-box')) {
+                input.style.backgroundColor = val; // dynamically change visual background
+            }
+
             let changed = false;
             AppState.selection.forEach(id => {
                 const shape = AppState.shapes.find(s => s.id === id);
@@ -1886,6 +1900,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Often yellow
             const yellow = '#ffea00';
             drawColorInput.value = yellow;
+            drawColorInput.style.backgroundColor = yellow;
             AppState.drawConfig.color = yellow;
         });
     }
@@ -1893,25 +1908,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (drawColorInput) {
         drawColorInput.addEventListener('input', (e) => {
             AppState.drawConfig.color = e.target.value;
+            drawColorInput.style.backgroundColor = e.target.value;
         });
+        // Initial setup for draw-color background
+        drawColorInput.style.backgroundColor = drawColorInput.value;
     }
-    
+
     drawColorPresets.forEach(btn => {
         btn.addEventListener('click', () => {
             const hex = btn.dataset.color;
             AppState.drawConfig.color = hex;
-            if (drawColorInput) drawColorInput.value = hex;
+            if (drawColorInput) {
+                drawColorInput.value = hex;
+                drawColorInput.style.backgroundColor = hex;
+            }
         });
     });
 
-    if (drawThicknessInput && drawThicknessVal) {
-        drawThicknessInput.addEventListener('input', (e) => {
-            AppState.drawConfig.thickness = parseInt(e.target.value);
-            drawThicknessVal.textContent = AppState.drawConfig.thickness + 'px';
-        });
-    }
-
-    // Text Settings (Ribbon)
     const textFontFamily = document.getElementById('text-font-family');
     const textFontSize = document.getElementById('text-font-size');
     const textBold = document.getElementById('text-bold');
@@ -2069,7 +2082,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { name: 'Chevron Left', type: 'chevron-left', category: 'arrows', icon: '⟨' },
         { name: 'Chevron Up', type: 'chevron-up', category: 'arrows', icon: '⌃' },
         { name: 'Chevron Down', type: 'chevron-down', category: 'arrows', icon: '⌄' },
-        { name: 'Double Arrow', type: 'double-arrow', category: 'arrows', icon: '⇄' },
+        { name: 'Double Arrow', type: 'double-arrow', category: 'arrows', icon: '↔' },
 
         // UI blocks
         { name: 'Button', type: 'ui-button', category: 'ui', icon: '⬚' },
