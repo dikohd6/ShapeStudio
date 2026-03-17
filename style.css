@@ -508,6 +508,7 @@ input[type="range"] {
   background-size: 20px 20px;
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .ruler {

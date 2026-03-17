@@ -664,15 +664,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let toastTimer = null;
-    function showToast(msg) {
+    function showToast(msg, isError = false) {
         const toast = document.querySelector('.toast');
         if (!toast) return;
         toast.innerHTML = `${msg}`;
+        
+        if (isError) {
+            toast.style.backgroundColor = '#ef4444';
+            toast.style.color = '#ffffff';
+            toast.style.fontWeight = 'bold';
+            toast.style.transform = 'scale(1.1)';
+        } else {
+            toast.style.backgroundColor = '';
+            toast.style.color = '';
+            toast.style.fontWeight = '';
+            toast.style.transform = '';
+        }
+
         toast.classList.remove('hidden');
         if (toastTimer) clearTimeout(toastTimer);
         toastTimer = setTimeout(() => {
             toast.classList.add('hidden');
-        }, 3200);
+        }, isError ? 4000 : 3200);
     }
 
     // ==========================================
@@ -881,6 +894,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     ny = Math.round(ny / AppState.settings.gridSize) * AppState.settings.gridSize;
                 }
 
+                nx = Math.max(0, Math.min(nx, AppState.settings.canvasW - shape.w));
+                ny = Math.max(0, Math.min(ny, AppState.settings.canvasH - shape.h));
+
                 shape.x = nx;
                 shape.y = ny;
             }
@@ -922,6 +938,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     shape.y = ny;
                 }
+
+                if (shape.x < 0) { shape.w += shape.x; shape.x = 0; }
+                if (shape.y < 0) { shape.h += shape.y; shape.y = 0; }
+                if (shape.x + shape.w > AppState.settings.canvasW) { shape.w = AppState.settings.canvasW - shape.x; }
+                if (shape.y + shape.h > AppState.settings.canvasH) { shape.h = AppState.settings.canvasH - shape.y; }
             }
             else if (isRotating) {
                 // calculate angle from shape center
@@ -1305,14 +1326,52 @@ document.addEventListener('DOMContentLoaded', () => {
                 input.style.backgroundColor = val; // dynamically change visual background
             }
 
+            let showBoundsError = false;
             let changed = false;
+            
             AppState.selection.forEach(id => {
                 const shape = AppState.shapes.find(s => s.id === id);
                 if (shape) {
-                    shape[prop] = val;
+                    let finalVal = val;
+                    if (prop === 'x') {
+                        if (finalVal < 0 || finalVal + shape.w > AppState.settings.canvasW) { 
+                            showBoundsError = true; 
+                            finalVal = Math.max(0, Math.min(finalVal, AppState.settings.canvasW - shape.w)); 
+                        }
+                    } else if (prop === 'y') {
+                        if (finalVal < 0 || finalVal + shape.h > AppState.settings.canvasH) { 
+                            showBoundsError = true; 
+                            finalVal = Math.max(0, Math.min(finalVal, AppState.settings.canvasH - shape.h)); 
+                        }
+                    } else if (prop === 'w') {
+                        if (shape.x + finalVal > AppState.settings.canvasW) { 
+                            showBoundsError = true; 
+                            finalVal = AppState.settings.canvasW - shape.x; 
+                        }
+                        finalVal = Math.max(10, finalVal);
+                    } else if (prop === 'h') {
+                        if (shape.y + finalVal > AppState.settings.canvasH) { 
+                            showBoundsError = true; 
+                            finalVal = AppState.settings.canvasH - shape.y; 
+                        }
+                        finalVal = Math.max(10, finalVal);
+                    }
+                    
+                    shape[prop] = finalVal;
+                    if (prop === 'x' || prop === 'y' || prop === 'w' || prop === 'h') {
+                        if (document.activeElement === input) {
+                            input.value = finalVal;
+                        }
+                    }
+                    
                     changed = true;
                 }
             });
+
+            if (showBoundsError) {
+                showToast('🚨 OUT OF BOUNDS: Value exceeds canvas size!', true);
+            }
+
             if (changed) {
                 // For 'input' events (dragging sliders/colors), maybe don't flood history?
                 // For a prototype, saving history tracking on release is better, but this will do.
@@ -1354,12 +1413,27 @@ document.addEventListener('DOMContentLoaded', () => {
     bindInput(DOM.inspDesc, 'description', true);
 
     // Canvas settings binding
+    function clampShapesToCanvas() {
+        let changed = false;
+        AppState.shapes.forEach(shape => {
+            if (shape.x + shape.w > AppState.settings.canvasW) { shape.x = Math.max(0, AppState.settings.canvasW - shape.w); changed = true; }
+            if (shape.x < 0) { shape.w += shape.x; shape.x = 0; changed = true; }
+            if (shape.w > AppState.settings.canvasW) { shape.w = AppState.settings.canvasW; changed = true; }
+            
+            if (shape.y + shape.h > AppState.settings.canvasH) { shape.y = Math.max(0, AppState.settings.canvasH - shape.h); changed = true; }
+            if (shape.y < 0) { shape.h += shape.y; shape.y = 0; changed = true; }
+            if (shape.h > AppState.settings.canvasH) { shape.h = AppState.settings.canvasH; changed = true; }
+        });
+        if (changed) renderAll();
+    }
+
     if (DOM.canvasW) {
         DOM.canvasW.addEventListener('change', (e) => {
             const w = Math.max(100, parseInt(e.target.value) || 900);
             AppState.settings.canvasW = w;
             DOM.canvas.style.width = `${w}px`;
             e.target.value = w;
+            clampShapesToCanvas();
             commitHistory();
         });
     }
@@ -1369,6 +1443,7 @@ document.addEventListener('DOMContentLoaded', () => {
             AppState.settings.canvasH = h;
             DOM.canvas.style.height = `${h}px`;
             e.target.value = h;
+            clampShapesToCanvas();
             commitHistory();
         });
     }
@@ -1503,6 +1578,22 @@ document.addEventListener('DOMContentLoaded', () => {
         AppState.settings.panY = 0;
         applyCanvasTransform();
     });
+
+    // Zoom via Scroll Wheel
+    const canvasArea = DOM.canvas.closest('.canvas-area') || DOM.canvas.parentElement;
+    if (canvasArea) {
+        canvasArea.addEventListener('wheel', (e) => {
+            if (e.ctrlKey || e.metaKey || !e.shiftKey) { // Adjust zoom on ctrl+scroll or standard scroll if desired
+                e.preventDefault();
+                const zoomSpeed = 0.05;
+                const delta = e.deltaY > 0 ? -zoomSpeed : zoomSpeed;
+                const newZoom = Math.max(0.2, Math.min(3, AppState.settings.zoom + delta));
+                
+                AppState.settings.zoom = newZoom;
+                applyCanvasTransform();
+            }
+        }, { passive: false });
+    }
 
     // Mini toolbar specific actions
     if (DOM.btnMiniFill) DOM.btnMiniFill.addEventListener('click', () => { if (DOM.inspFill) DOM.inspFill.click(); });
