@@ -4,9 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ==========================================
-    // 1. STATE MANAGEMENT
-    // ==========================================
+   
     const AppState = {
         shapes: [],
         selection: [], // array of shape IDs
@@ -25,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
             canvasH: 600
         },
         drawConfig: {
-            mode: 'pen', // 'pen' or 'highlighter'
+            mode: 'pen', //pen or highlighter
             color: '#444444',
             thickness: 2
         },
@@ -38,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
             color: '#000000'
         },
         eraserConfig: {
-            mode: 'object', // 'object' or 'partial'
+            mode: 'object', //object or partial
             size: 20
         },
         activeTool: 'select'
@@ -114,9 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize first state
     commitHistory();
 
-    // ==========================================
-    // 2. DOM ELEMENTS
-    // ==========================================
+    //DOM Elements
     const DOM = {
         canvas: document.getElementById('canvas-container'),
         ghost: document.getElementById('drag-ghost'),
@@ -148,8 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         canvasH: document.getElementById('canvas-h'),
         snapGrid: document.getElementById('snap-grid'),
 
-        // Ribbon specific additions
-        // DOM.ribbon* properties removed to clean up code
+        // Ribbon elements
 
         library: document.getElementById('library-grid'),
 
@@ -177,9 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.fileName.value = AppState.fileName;
     }
 
-    // ==========================================
-    // 3. CANVAS CORE ACTIONS
-    // ==========================================
 
     function createShapeData(type, x, y) {
         shapeCounter++;
@@ -298,9 +290,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('Duplicated — Undo (Cmd+Z)');
     }
 
-    // ==========================================
-    // 4. RENDERING ENGINE
-    // ==========================================
 
     function applyCanvasTransform() {
         DOM.canvas.style.transform = `translate(${AppState.settings.panX}px, ${AppState.settings.panY}px) scale(${AppState.settings.zoom})`;
@@ -322,13 +311,13 @@ document.addEventListener('DOMContentLoaded', () => {
             el.id = shape.id;
             el.className = 'shape-element';
 
-            // Wireframe styling
+            // styling
             el.style.position = 'absolute';
             el.style.border = '1px solid #444';
             el.style.background = '#eaeaea';
             el.style.boxSizing = 'border-box';
 
-            // Core shape styling logic moved to updateElementStyles for persistence
+            
 
             updateElementStyles(el, shape);
 
@@ -374,7 +363,6 @@ document.addEventListener('DOMContentLoaded', () => {
         el.style.transform = `rotate(${shape.rot}deg)`;
         el.style.opacity = shape.opacity / 100;
 
-        // Reset wrapper styles so handles attached to 'el' are never clipped
         el.style.backgroundColor = 'transparent';
         el.style.borderColor = 'transparent';
         el.style.borderRadius = '';
@@ -516,9 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
         el.appendChild(rot);
     }
 
-    // ==========================================
-    // 5. SELECTION & UI UPDATES
-    // ==========================================
+    //UI STUFF
 
     function selectShape(id, multi) {
         if (!id) {
@@ -688,9 +674,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, isError ? 4000 : 3200);
     }
 
-    // ==========================================
-    // 6. DRAG & DROP FROM LIBRARY
-    // ==========================================
+    //drag and drop from library
 
     let dragType = null;
 
@@ -765,9 +749,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ==========================================
-    // 7. CANVAS MANIPULATION (MOVE, RESIZE, ROTATE)
-    // ==========================================
+    //canvas interactions
     let isDragging = false;
     let isResizing = false;
     let isRotating = false;
@@ -902,7 +884,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             else if (isResizing) {
                 if (initial.lockPosition) return;
-                // simple resizing logic (ignores rotation for prototype simplicity)
+                // simple resizing logic 
                 let nx = initial.x, ny = initial.y, nw = initial.w, nh = initial.h;
                 const aspect = nw / nh;
 
@@ -1075,7 +1057,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     fill: 'transparent',
                     stroke: AppState.drawConfig.color,
                     strokeWidth: AppState.drawConfig.thickness,
-                    opacity: isHighlight ? 40 : 100, // UX Principle: System Match & Real World (highlighters are transmissive)
+                    opacity: isHighlight ? 40 : 100, 
                     points: "0,0"
                 };
                 AppState.shapes.push(currentDrawShape);
@@ -1087,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Panning/Drawing logic on mouse move globally
+    // Panning/Drawing logic on mouse move
     const eraserCursor = document.getElementById('eraser-cursor');
     function updateEraserCursor() {
         if (!eraserCursor) return;
@@ -1100,7 +1082,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Add function to do sweeping/partial erasing
+    // Add function to do partial erasing
     function performErase(e) {
         if (!isErasing) return;
         const rect = DOM.canvas.getBoundingClientRect();
@@ -1307,9 +1289,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ==========================================
-    // 8. INSPECTOR DATA BINDING
-    // ==========================================
+    //Inspector bindings
     function bindInput(input, prop, isString = false) {
         if (!input) return;
 
@@ -1373,8 +1353,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (changed) {
-                // For 'input' events (dragging sliders/colors), maybe don't flood history?
-                // For a prototype, saving history tracking on release is better, but this will do.
+                
                 if (eventType === 'change') commitHistory();
                 renderAll();
             }
@@ -1458,9 +1437,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ==========================================
-    // 9. HOTKEYS & GLOBAL ACTIONS
-    // ==========================================
+    //Hotkeys and global actions
 
     document.addEventListener('keydown', (e) => {
         // Custom hotkeys (Cmd/Ctrl)
@@ -1723,7 +1700,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const pasteData = JSON.parse(JSON.stringify(clipboard));
         
         pasteData.forEach(s => {
-            // Update the original clipboard objects so the next paste is further offset!
+            // Update the original clipboard objects so the next paste is further offset
             const originalClipItem = clipboard.find(c => c.id === s.id);
             if (originalClipItem) {
                  originalClipItem.x += 20;
@@ -1768,7 +1745,7 @@ document.addEventListener('DOMContentLoaded', () => {
         shapes.forEach(tmpl => {
             const data = createShapeData(tmpl.type, tmpl.x + 100, tmpl.y + 100);
             Object.assign(data, tmpl);
-            data.id = 's_' + (++shapeCounter); // Re-assign unique id
+            data.id = 's_' + (++shapeCounter); // Reassign unique id
             AppState.shapes.push(data);
             ids.push(data.id);
         });
@@ -1861,7 +1838,7 @@ document.addEventListener('DOMContentLoaded', () => {
             el.style.display = isAdv ? '' : 'none';
         });
 
-        // Hide/show right sidebar completely to heavily distinguish modes
+        // Hide/show right sidebar completely to distinguish modes
         const rightSidebar = document.querySelector('.right-sidebar');
         if (rightSidebar) {
             rightSidebar.style.display = isAdv ? 'flex' : 'none';
@@ -1973,7 +1950,7 @@ document.addEventListener('DOMContentLoaded', () => {
             drawModePen.classList.add('active');
             drawModeHighlighter.classList.remove('active');
             
-            // Set pen defaults (match user interface principles: consistency)
+            // Set pen defaults
             if (drawThicknessInput.value > 10) {
                 drawThicknessInput.value = 2;
                 drawThicknessInput.dispatchEvent(new Event('input'));
@@ -2142,7 +2119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Shape Library Chips & Search
+    // Shape Library items and Search
     const libraryChips = document.querySelectorAll('.library-panel .chips .chip');
     const libraryGrid = document.getElementById('library-grid');
     const librarySearch = document.getElementById('library-search');
@@ -2221,7 +2198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // initial render
     renderLibrary(activeCategory, '');
 
-    // Command search with suggestions (commands only; search does not auto-run)
+    // Command search with suggestions
     const commands = [
         { id: 'undo', label: 'Undo', keywords: ['undo', 'cmd+z', 'ctrl+z'], hint: 'Ctrl/Cmd+Z', action: undo },
         { id: 'redo', label: 'Redo', keywords: ['redo', 'cmd+shift+z', 'ctrl+y'], hint: 'Ctrl/Cmd+Shift+Z', action: redo },
