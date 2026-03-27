@@ -587,10 +587,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (DOM.inspFill && document.activeElement !== DOM.inspFill) {
                 DOM.inspFill.value = primary.fill !== 'transparent' ? primary.fill : '#ffffff';
                 DOM.inspFill.style.backgroundColor = primary.fill;
+                const realMF = document.getElementById('mini-fill-real');
+                if (realMF) realMF.value = DOM.inspFill.value;
             }
             if (DOM.inspStroke && document.activeElement !== DOM.inspStroke) {
                 DOM.inspStroke.value = primary.stroke !== 'transparent' ? primary.stroke : '#ffffff';
                 DOM.inspStroke.style.backgroundColor = primary.stroke;
+                const realMS = document.getElementById('mini-stroke-real');
+                if (realMS) realMS.value = DOM.inspStroke.value;
             }
             if (DOM.inspOpacity) {
                 if (document.activeElement !== DOM.inspOpacity) {
@@ -1573,8 +1577,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Mini toolbar specific actions
-    if (DOM.btnMiniFill) DOM.btnMiniFill.addEventListener('click', () => { if (DOM.inspFill) DOM.inspFill.click(); });
-    if (DOM.btnMiniStroke) DOM.btnMiniStroke.addEventListener('click', () => { if (DOM.inspStroke) DOM.inspStroke.click(); });
+    const realMiniFill = document.getElementById('mini-fill-real');
+    if (realMiniFill && DOM.inspFill) {
+        realMiniFill.addEventListener('input', (e) => {
+            DOM.inspFill.value = e.target.value;
+            DOM.inspFill.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        realMiniFill.addEventListener('change', (e) => {
+            DOM.inspFill.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
+
+    const realMiniStroke = document.getElementById('mini-stroke-real');
+    if (realMiniStroke && DOM.inspStroke) {
+        realMiniStroke.addEventListener('input', (e) => {
+            DOM.inspStroke.value = e.target.value;
+            DOM.inspStroke.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        realMiniStroke.addEventListener('change', (e) => {
+            DOM.inspStroke.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
     if (DOM.btnAlign) {
         DOM.btnAlign.addEventListener('click', () => {
             if (AppState.selection.length === 0) return;
