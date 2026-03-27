@@ -1982,6 +1982,13 @@ document.addEventListener('DOMContentLoaded', () => {
         drawColorInput.style.backgroundColor = drawColorInput.value;
     }
 
+    if (drawThicknessInput && drawThicknessVal) {
+        drawThicknessInput.addEventListener('input', (e) => {
+            AppState.drawConfig.thickness = parseInt(e.target.value);
+            drawThicknessVal.textContent = AppState.drawConfig.thickness + 'px';
+        });
+    }
+
     drawColorPresets.forEach(btn => {
         btn.addEventListener('click', () => {
             const hex = btn.dataset.color;
